@@ -1,0 +1,2212 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>الدوري المغربي | النتائج والترتيب والبث المباشر</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <!-- مكتبات تشغيل البث المباشر HLS (m3u8) و MPEG-TS (.ts) -->
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.15/dist/hls.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mpegts.js@1.7.3/dist/mpegts.min.js"></script>
+    <style>
+        :root {
+            --cyan: #26dfff;
+            --blue: #087ccb;
+            --silver: #dceafa;
+            --glass: rgba(150, 190, 225, 0.14);
+            --glass-dark: rgba(6, 29, 53, 0.72);
+            --line: rgba(220, 240, 255, 0.28);
+            --accent-caf-cl: #ffd54a;     /* دوري أبطال إفريقيا */
+            --accent-caf-cc: #00d6a0;     /* كأس الكونفدرالية */
+            --accent-playoff: #ff922b;    /* تصفيات الهبوط 13 و 14 */
+            --accent-relegation: #ff536b; /* الهبوط 15 و 16 */
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Cairo', Arial, sans-serif;
+        }
+
+        body {
+            min-height: 100vh;
+            padding: 16px 12px 95px;
+            color: #f5faff;
+            background:
+                radial-gradient(ellipse at 12% 0%, rgba(20, 100, 160, 0.45), transparent 44%),
+                radial-gradient(ellipse at 90% 80%, rgba(125, 155, 190, 0.22), transparent 44%),
+                linear-gradient(145deg, #041326, #0b2949 55%, #3a546e);
+            background-attachment: fixed;
+        }
+
+        .app {
+            width: min(100%, 560px);
+            margin: auto;
+        }
+
+        /* البطاقات الزجاجية 3D */
+        .glass {
+            background: var(--glass);
+            border: 1px solid var(--line);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            box-shadow: inset 0 1px 3px rgba(255, 255, 255, 0.16), 0 12px 32px rgba(0, 16, 32, 0.35);
+        }
+
+        header, .panel, .toolbar, .dock, .player-card {
+            border-radius: 22px;
+        }
+
+        /* الرأس العلوي النظيف */
+        header {
+            padding: 12px 15px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 11px;
+            font-weight: 800;
+            font-size: 16px;
+            line-height: 1.25;
+        }
+
+        .brand-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 15px;
+            display: grid;
+            place-items: center;
+            background: linear-gradient(145deg, #42e6ff, #1765b5);
+            border: 1px solid #d9f7ff;
+            box-shadow: 0 7px 14px rgba(0, 16, 31, 0.55), inset 0 2px 7px rgba(255, 255, 255, 0.6), 0 0 17px rgba(38, 223, 255, 0.35);
+            font-size: 22px;
+            text-shadow: 0 3px 3px rgba(0, 26, 58, 0.8);
+            flex-shrink: 0;
+        }
+
+        .kicker {
+            font-size: 11px;
+            color: #a9cce8;
+            font-weight: 600;
+            display: block;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        /* الأزرار الزجاجية ثلاثية الأبعاد */
+        button, .btn {
+            font: 700 12px 'Cairo', sans-serif;
+            cursor: pointer;
+            color: #fff;
+            border: 1px solid rgba(201, 231, 255, 0.3);
+            background: rgba(167, 201, 227, 0.16);
+            border-radius: 12px;
+            padding: 8px 12px;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            text-decoration: none;
+        }
+
+        button:hover, .btn:hover {
+            background: rgba(167, 201, 227, 0.28);
+        }
+
+        button:active, .btn:active {
+            transform: translateY(2px) scale(0.96);
+        }
+
+        button.primary, .btn.primary {
+            background: linear-gradient(115deg, #087ccb, #19bdf0, #4383ed);
+            border-color: #b9f1ff;
+            box-shadow: 0 5px 13px rgba(0, 26, 59, 0.5), inset 0 2px 5px rgba(255, 255, 255, 0.45), 0 0 15px rgba(38, 223, 255, 0.3);
+        }
+
+        button.success {
+            background: linear-gradient(115deg, #059669, #10b981);
+            border-color: #a7f3d0;
+            box-shadow: 0 4px 12px rgba(5, 150, 105, 0.4);
+        }
+
+        button.danger {
+            background: rgba(239, 68, 68, 0.22);
+            border-color: rgba(255, 83, 107, 0.6);
+            color: #ffc9d1;
+        }
+
+        button.warning {
+            background: rgba(245, 158, 11, 0.25);
+            border-color: rgba(251, 191, 36, 0.6);
+            color: #fde68a;
+        }
+
+        /* شريط أدوات المدير */
+        .toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 7px;
+            margin-bottom: 12px;
+            padding: 10px;
+        }
+
+        .toolbar button {
+            flex: 1 1 auto;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* البطاقات */
+        .panel {
+            overflow: hidden;
+            margin-bottom: 14px;
+        }
+
+        .panel-head {
+            padding: 13px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(157, 200, 237, 0.1);
+            border-bottom: 1px solid rgba(217, 237, 255, 0.18);
+            font-weight: 800;
+            font-size: 15px;
+        }
+
+        .panel-head-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .big-icon {
+            font-size: 19px;
+            display: inline-block;
+            filter: drop-shadow(0 3px 2px rgba(0, 16, 31, 0.6)) drop-shadow(0 0 6px rgba(38, 223, 255, 0.4));
+        }
+
+        .live-badge-top {
+            font-size: 11px;
+            color: #8df2ff;
+            background: rgba(38, 223, 255, 0.14);
+            border: 1px solid rgba(38, 223, 255, 0.35);
+            padding: 3px 9px;
+            border-radius: 20px;
+            font-weight: 700;
+        }
+
+        /* بطاقة المباريات */
+        .match-row {
+            display: grid;
+            grid-template-columns: 1fr 94px 1fr;
+            align-items: center;
+            padding: 13px 12px;
+            border-bottom: 1px solid rgba(217, 237, 255, 0.12);
+            background: rgba(169, 201, 229, 0.08);
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .match-row:nth-child(even) {
+            background: rgba(215, 232, 245, 0.05);
+        }
+
+        .match-row:hover {
+            background: rgba(38, 223, 255, 0.16);
+        }
+
+        .match-team {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            min-width: 0;
+        }
+
+        .match-team.home {
+            justify-content: flex-start;
+            text-align: right;
+        }
+
+        .match-team.away {
+            justify-content: flex-end;
+            text-align: left;
+        }
+
+        .match-team-name {
+            font-size: 13px;
+            font-weight: 700;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .match-center {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 2px;
+        }
+
+        .match-time-status {
+            font-size: 11px;
+            font-weight: 800;
+            padding: 1px 7px;
+            border-radius: 8px;
+        }
+
+        .status-live {
+            color: #ff6b81;
+            animation: pulseText 1.4s infinite;
+        }
+
+        .status-ht {
+            color: #00e6ac;
+            background: rgba(0, 214, 160, 0.15);
+        }
+
+        .status-ft {
+            color: #ff536b;
+            background: rgba(255, 83, 107, 0.15);
+        }
+
+        .status-upcoming {
+            color: #a9cce8;
+        }
+
+        @keyframes pulseText {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.45; }
+        }
+
+        .match-score {
+            font-size: 17px;
+            font-weight: 800;
+            letter-spacing: 1px;
+            direction: ltr;
+            color: #ffffff;
+            text-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+        }
+
+        .stream-pill {
+            font-size: 9px;
+            color: #8df2ff;
+            opacity: 0.85;
+        }
+
+        .match-admin-strip {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            justify-content: center;
+            padding: 7px 10px;
+            background: rgba(4, 19, 38, 0.65);
+            border-bottom: 1px solid rgba(217, 237, 255, 0.16);
+        }
+
+        .match-admin-strip button {
+            padding: 4px 8px;
+            font-size: 11px;
+            border-radius: 8px;
+        }
+
+        .panel-footer-link {
+            display: block;
+            width: 100%;
+            text-align: center;
+            padding: 12px;
+            background: rgba(6, 29, 53, 0.55);
+            color: #b8d9f5;
+            font-size: 13px;
+            font-weight: 700;
+            border: none;
+            border-radius: 0;
+        }
+
+        .panel-footer-link:hover {
+            background: rgba(38, 223, 255, 0.18);
+            color: #fff;
+        }
+
+        /* جدول الترتيب */
+        .table-head, .team-row {
+            display: grid;
+            grid-template-columns: 32px 1fr 40px 58px 40px 42px;
+            align-items: center;
+            gap: 4px;
+            padding: 10px 10px;
+            text-align: center;
+            position: relative;
+        }
+
+        .table-head.edit-mode, .team-row.edit-mode {
+            grid-template-columns: 28px 1fr 38px 54px 36px 40px 28px;
+        }
+
+        .table-head {
+            font-size: 11px;
+            font-weight: 700;
+            color: #b8d3e9;
+            background: var(--glass-dark);
+            border-bottom: 1px solid rgba(217, 237, 255, 0.2);
+        }
+
+        .team-row {
+            font-size: 13px;
+            border-bottom: 1px solid rgba(217, 237, 255, 0.1);
+            background: rgba(169, 201, 229, 0.1);
+            transition: background 0.15s;
+        }
+
+        .team-row:nth-child(even) {
+            background: rgba(215, 232, 245, 0.05);
+        }
+
+        .team-row:hover {
+            background: rgba(38, 223, 255, 0.18);
+        }
+
+        /* أشرطة التأهل والهبوط الجانبية المضيئة */
+        .team-row::before {
+            content: "";
+            position: absolute;
+            right: 0;
+            top: 3px;
+            bottom: 3px;
+            width: 4px;
+            border-radius: 3px 0 0 3px;
+        }
+
+        .status-caf-cl::before {
+            background: var(--accent-caf-cl);
+            box-shadow: 0 0 8px var(--accent-caf-cl);
+        }
+        .status-caf-cc::before {
+            background: var(--accent-caf-cc);
+            box-shadow: 0 0 8px var(--accent-caf-cc);
+        }
+        .status-playoff::before {
+            background: var(--accent-playoff);
+            box-shadow: 0 0 8px var(--accent-playoff);
+        }
+        .status-relegation::before {
+            background: var(--accent-relegation);
+            box-shadow: 0 0 8px var(--accent-relegation);
+        }
+
+        .teamname {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            text-align: right;
+            font-weight: 700;
+            min-width: 0;
+        }
+
+        .team-label {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* الشعار ثلاثي الأبعاد */
+        .crest {
+            width: 30px;
+            height: 30px;
+            flex: none;
+            border-radius: 50%;
+            display: grid;
+            place-items: center;
+            font: 800 8px Arial, sans-serif;
+            color: #fff;
+            border: 1px solid rgba(255, 255, 255, 0.65);
+            box-shadow: 0 5px 8px rgba(0, 16, 31, 0.6), inset 0 2px 5px rgba(255, 255, 255, 0.45), 0 0 9px rgba(38, 223, 255, 0.25);
+            text-shadow: 0 2px 3px rgba(0, 0, 0, 0.6);
+            overflow: hidden;
+            position: relative;
+        }
+
+        .crest img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 2px;
+        }
+
+        .stat-num {
+            direction: ltr;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .pts {
+            font-weight: 800;
+            color: #ffffff;
+            font-size: 14px;
+        }
+
+        [contenteditable="true"].editable-field {
+            background: rgba(38, 223, 255, 0.18);
+            outline: 1px dashed var(--cyan);
+            border-radius: 6px;
+            padding: 2px 4px;
+            cursor: text;
+        }
+
+        /* مفتاح الألوان */
+        .legend {
+            padding: 13px 15px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 9px;
+            font-size: 11px;
+            color: #dcebf7;
+            background: rgba(6, 29, 53, 0.45);
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+        }
+
+        .dot {
+            display: inline-block;
+            width: 9px;
+            height: 9px;
+            border-radius: 50%;
+            box-shadow: 0 0 8px currentColor;
+            flex-shrink: 0;
+        }
+
+        /* صفحة مشغل الفيديو المتعدد (YouTube + M3U8 + M3U + TS) */
+        .player-header-box {
+            padding: 14px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(217, 237, 255, 0.18);
+            background: rgba(157, 200, 237, 0.08);
+        }
+
+        .stream-type-badge {
+            font-size: 10px;
+            font-weight: 800;
+            padding: 3px 9px;
+            border-radius: 12px;
+            background: rgba(38, 223, 255, 0.18);
+            border: 1px solid rgba(38, 223, 255, 0.4);
+            color: #8df2ff;
+            direction: ltr;
+        }
+
+        .video-wrapper {
+            position: relative;
+            width: 100%;
+            padding-top: 56.25%;
+            background: #020912;
+        }
+
+        .video-wrapper iframe,
+        .video-wrapper video {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            border: 0;
+            background: #000;
+        }
+
+        .video-placeholder {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            color: #a9cce8;
+            font-size: 13px;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .player-status-msg {
+            padding: 8px 14px;
+            font-size: 12px;
+            text-align: center;
+            background: rgba(255, 83, 107, 0.18);
+            color: #ffc9d1;
+            border-top: 1px solid rgba(255, 83, 107, 0.35);
+            display: none;
+        }
+
+        .player-status-msg.info {
+            background: rgba(38, 223, 255, 0.14);
+            color: #bceeff;
+            border-top-color: rgba(38, 223, 255, 0.3);
+        }
+
+        .m3u-playlist-box {
+            padding: 12px 15px;
+            border-top: 1px solid rgba(217, 237, 255, 0.18);
+            background: rgba(4, 19, 38, 0.55);
+        }
+
+        .m3u-playlist-title {
+            font-size: 12px;
+            font-weight: 700;
+            color: #8df2ff;
+            margin-bottom: 8px;
+        }
+
+        .m3u-channels-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            max-height: 145px;
+            overflow-y: auto;
+        }
+
+        .m3u-ch-btn {
+            font-size: 11px;
+            padding: 5px 10px;
+            border-radius: 9px;
+            background: rgba(167, 201, 227, 0.14);
+        }
+
+        .m3u-ch-btn.active {
+            background: linear-gradient(115deg, #087ccb, #19bdf0);
+            border-color: #b9f1ff;
+        }
+
+        .external-watch-bar {
+            padding: 10px 15px;
+            background: rgba(6, 29, 53, 0.5);
+            border-top: 1px solid rgba(217, 237, 255, 0.15);
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .video-controls-admin {
+            padding: 14px 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            background: rgba(6, 29, 53, 0.65);
+            border-top: 1px solid rgba(217, 237, 255, 0.18);
+        }
+
+        .video-input-row {
+            display: flex;
+            gap: 8px;
+        }
+
+        /* تبويب الإحصائيات */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            padding: 14px;
+        }
+
+        .stat-box {
+            background: rgba(6, 29, 53, 0.52);
+            border: 1px solid rgba(217, 237, 255, 0.18);
+            border-radius: 16px;
+            padding: 12px;
+            text-align: center;
+        }
+
+        .stat-box-title {
+            font-size: 11px;
+            color: #a9cce8;
+            margin-bottom: 4px;
+        }
+
+        .stat-box-value {
+            font-size: 16px;
+            font-weight: 800;
+            color: #fff;
+        }
+
+        .stat-box-sub {
+            font-size: 11px;
+            color: #8df2ff;
+            margin-top: 2px;
+        }
+
+        /* الشريط السفلي العائم ثلاثي الأبعاد (3D Dock) */
+        .dock {
+            width: min(calc(100% - 24px), 560px);
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding: 8px 6px;
+            gap: 6px;
+            position: fixed;
+            bottom: 12px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 900;
+            background: rgba(9, 35, 60, 0.8);
+            box-shadow: 0 12px 30px rgba(0, 16, 31, 0.65), inset 0 1px 3px rgba(255, 255, 255, 0.25);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+        }
+
+        .dock button {
+            flex: 1;
+            border: 0;
+            background: transparent;
+            box-shadow: none;
+            padding: 6px 3px;
+            color: #c2d8ea;
+            font-size: 11px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .dock .nav-icon {
+            width: 38px;
+            height: 38px;
+            display: grid;
+            place-items: center;
+            border-radius: 13px;
+            font-size: 19px;
+            background: linear-gradient(145deg, rgba(255, 255, 255, 0.22), rgba(78, 141, 179, 0.2));
+            border: 1px solid rgba(217, 242, 255, 0.35);
+            box-shadow: 0 5px 8px rgba(0, 16, 31, 0.55), inset 0 2px 5px rgba(255, 255, 255, 0.35), 0 0 10px rgba(38, 223, 255, 0.15);
+            text-shadow: 0 3px 3px rgba(0, 21, 43, 0.8);
+            transform: perspective(180px) rotateX(7deg);
+            transition: all 0.25s ease;
+        }
+
+        .dock button.active {
+            color: #ffffff;
+        }
+
+        .dock button.active .nav-icon {
+            background: linear-gradient(145deg, #4be8ff, #1376c6);
+            border-color: #d9f7ff;
+            box-shadow: 0 7px 14px rgba(0, 16, 31, 0.7), inset 0 2px 7px rgba(255, 255, 255, 0.65), 0 0 18px rgba(38, 223, 255, 0.55);
+            transform: translateY(-5px) perspective(180px) rotateX(7deg) scale(1.08);
+        }
+
+        /* النوافذ المنبثقة (Modals) */
+        .modal-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(2, 10, 22, 0.8);
+            backdrop-filter: blur(8px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1200;
+            padding: 16px;
+        }
+
+        .modal-backdrop.open {
+            display: flex;
+        }
+
+        .modal {
+            width: 100%;
+            max-width: 410px;
+            border-radius: 22px;
+            padding: 20px;
+            background: linear-gradient(155deg, rgba(14, 48, 84, 0.94), rgba(6, 24, 46, 0.96));
+            border: 1px solid rgba(220, 240, 255, 0.35);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7);
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal h3 {
+            font-size: 16px;
+            margin-bottom: 14px;
+            color: #fff;
+        }
+
+        .form-group {
+            margin-bottom: 12px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 12px;
+            color: #b8d3e9;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+
+        .form-group input, .form-group select, .video-input-row input {
+            width: 100%;
+            padding: 9px 11px;
+            border-radius: 11px;
+            border: 1px solid rgba(217, 237, 255, 0.3);
+            background: rgba(4, 19, 38, 0.75);
+            color: #fff;
+            font-size: 13px;
+            outline: none;
+        }
+
+        .form-group input:focus, .form-group select:focus, .video-input-row input:focus {
+            border-color: var(--cyan);
+            box-shadow: 0 0 10px rgba(38, 223, 255, 0.25);
+        }
+
+        .form-row-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+            margin-top: 15px;
+        }
+
+        .logo-preview-box {
+            width: 52px;
+            height: 52px;
+            border-radius: 50%;
+            margin: 8px auto 0;
+            display: grid;
+            place-items: center;
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            background: rgba(255, 255, 255, 0.1);
+            overflow: hidden;
+            font-weight: 800;
+            font-size: 12px;
+        }
+
+        .logo-preview-box img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            background: #fff;
+            padding: 3px;
+        }
+
+        .error-msg {
+            color: #ff6b81;
+            font-size: 12px;
+            margin-bottom: 8px;
+            display: none;
+        }
+
+        /* إشعار عائم بدل alert و confirm */
+        .toast-banner {
+            position: fixed;
+            top: 16px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1500;
+            padding: 9px 18px;
+            border-radius: 999px;
+            background: linear-gradient(135deg, rgba(8, 38, 70, 0.95), rgba(16, 70, 115, 0.95));
+            border: 1px solid rgba(38, 223, 255, 0.45);
+            color: #fff;
+            font-size: 12px;
+            font-weight: 700;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.55);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.25s ease;
+            white-space: nowrap;
+        }
+
+        .toast-banner.show {
+            opacity: 1;
+        }
+
+        @media (max-width: 390px) {
+            .brand { font-size: 14px; }
+            .table-head, .team-row { grid-template-columns: 26px 1fr 34px 48px 34px 36px; padding: 9px 7px; font-size: 12px; }
+            .match-team-name { font-size: 12px; }
+            .match-row { grid-template-columns: 1fr 82px 1fr; padding: 11px 8px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="app">
+    <!-- الرأس العلوي -->
+    <header class="glass">
+        <div class="brand">
+            <span class="brand-icon">🏆</span>
+            <div>
+                <span id="leagueTitle">الدوري المغربي</span>
+                <span class="kicker" id="headerSubtitle">النتائج المباشرة والترتيب</span>
+            </div>
+        </div>
+        <div class="header-actions">
+            <button id="loginOpenBtn" onclick="openLoginModal()">🔐 دخول المدير</button>
+            <button id="adminSettingsBtn" class="hidden" onclick="openAdminSettingsModal()" title="إعدادات حساب المدير">⚙️</button>
+            <button id="logoutBtn" class="danger hidden" onclick="logoutAdmin()">🚪 خروج</button>
+        </div>
+    </header>
+
+    <!-- شريط أدوات المدير (مخفي تماماً عن الزوار) -->
+    <div id="adminToolbar" class="toolbar glass hidden">
+        <button id="toggleEditBtn" onclick="toggleEditMode()">✏️ تفعيل التعديل</button>
+        <button class="primary" onclick="openMatchModal()">➕ إضافة مباراة</button>
+        <button class="warning" id="speedBtn" onclick="toggleSimSpeed()">⚡ سرعة عادية</button>
+        <button class="primary" onclick="sortStandings()">↻ ترتيب تلقائي</button>
+        <button onclick="addNewTeam()">➕ فريق</button>
+        <button onclick="exportHTML()">💾 حفظ HTML</button>
+        <button class="danger" onclick="openResetConfirm()">↺ استعادة</button>
+    </div>
+
+    <!-- 1. تبويب المباريات المباشرة -->
+    <section id="viewMatches" class="panel glass">
+        <div class="panel-head">
+            <div class="panel-head-title">
+                <span class="big-icon">🏟️</span>
+                <span>مباريات الجولة</span>
+            </div>
+            <span class="live-badge-top">● اضغط للمشاهدة</span>
+        </div>
+        <div id="matchesList"></div>
+        <button class="panel-footer-link" onclick="switchView('standings')">شاهد الترتيب الكامل ⬅</button>
+    </section>
+
+    <!-- 2. تبويب جدول الترتيب -->
+    <section id="viewStandings" class="panel glass hidden">
+        <div class="panel-head">
+            <div class="panel-head-title">
+                <span class="big-icon">🏆</span>
+                <span>جدول ترتيب الدوري</span>
+            </div>
+            <span class="live-badge-top" id="teamsCountLabel">16 فريقاً</span>
+        </div>
+
+        <div class="table-head" id="tableHeader">
+            <span>#</span>
+            <span style="text-align:right">الفريق</span>
+            <span>لعب</span>
+            <span>+/-</span>
+            <span>فارق</span>
+            <span>نقاط</span>
+        </div>
+
+        <div id="teamsContainer"></div>
+
+        <div class="legend">
+            <div class="legend-item"><i class="dot" style="background:var(--accent-caf-cl);color:var(--accent-caf-cl)"></i><span>دوري أبطال إفريقيا (1-2)</span></div>
+            <div class="legend-item"><i class="dot" style="background:var(--accent-caf-cc);color:var(--accent-caf-cc)"></i><span>كأس الكونفدرالية (3)</span></div>
+            <div class="legend-item"><i class="dot" style="background:var(--accent-playoff);color:var(--accent-playoff)"></i><span>تصفيات الهبوط (13-14)</span></div>
+            <div class="legend-item"><i class="dot" style="background:var(--accent-relegation);color:var(--accent-relegation)"></i><span>الهبوط المباشر (15-16)</span></div>
+        </div>
+    </section>
+
+    <!-- 3. تبويب الإحصائيات -->
+    <section id="viewStats" class="panel glass hidden">
+        <div class="panel-head">
+            <div class="panel-head-title">
+                <span class="big-icon">📊</span>
+                <span>إحصائيات البطولة</span>
+            </div>
+            <span class="live-badge-top">تحديث تلقائي</span>
+        </div>
+        <div class="stats-grid" id="statsGrid"></div>
+    </section>
+
+    <!-- 4. صفحة مشاهدة المباراة (مشغل YouTube + M3U8 + M3U + TS) -->
+    <section id="viewPlayer" class="panel glass hidden">
+        <div class="player-header-box">
+            <button onclick="switchView('matches')">➔ رجوع للمباريات</button>
+            <span id="playerStreamBadge" class="stream-type-badge">LIVE PLAYER</span>
+        </div>
+
+        <div id="playerMatchHeader"></div>
+
+        <div class="video-wrapper" id="videoContainer">
+            <div class="video-placeholder">
+                <span style="font-size:32px">📺</span>
+                <span>لا يوجد رابط بث مضاف لهذه المباراة حالياً</span>
+            </div>
+        </div>
+
+        <div id="playerStatusMsg" class="player-status-msg"></div>
+
+        <!-- قائمة القنوات في حال كان الرابط ملف قائمة تشغيل .m3u -->
+        <div id="m3uPlaylistBox" class="m3u-playlist-box hidden">
+            <div class="m3u-playlist-title">📡 القنوات المتوفرة في قائمة M3U:</div>
+            <div id="m3uChannelsList" class="m3u-channels-list"></div>
+        </div>
+
+        <div id="externalWatchBar" class="external-watch-bar hidden">
+            <a id="externalWatchLink" href="#" target="_blank" rel="noopener noreferrer" class="btn primary">
+                ↗ فتح البث مباشرة في نافذة خارجية
+            </a>
+        </div>
+
+        <!-- التحكم في رابط البث للمدير فقط -->
+        <div id="playerAdminControls" class="video-controls-admin hidden">
+            <label style="font-size:12px;color:#b8d3e9;font-weight:700">
+                رابط البث المباشر (YouTube أو رابط .m3u8 أو قائمة .m3u أو قناة .ts):
+            </label>
+            <div class="video-input-row">
+                <input type="text" id="videoUrlInput" dir="ltr" placeholder="https://... (.m3u8 / .m3u / .ts / youtube)">
+                <button class="primary" onclick="saveMatchVideo()">حفظ وتشغيل</button>
+            </div>
+        </div>
+    </section>
+</div>
+
+<!-- الشريط السفلي العائم ثلاثي الأبعاد -->
+<nav class="dock glass">
+    <button id="navMatches" class="active" onclick="switchView('matches')">
+        <span class="nav-icon">🏟️</span>
+        <span>المباريات</span>
+    </button>
+    <button id="navStandings" onclick="switchView('standings')">
+        <span class="nav-icon">🏆</span>
+        <span>الترتيب</span>
+    </button>
+    <button id="navStats" onclick="switchView('stats')">
+        <span class="nav-icon">📊</span>
+        <span>الإحصائيات</span>
+    </button>
+</nav>
+
+<!-- إشعار عائم -->
+<div id="toastBanner" class="toast-banner"></div>
+
+<!-- نافذة تسجيل دخول المدير -->
+<div class="modal-backdrop" id="loginModal">
+    <div class="modal">
+        <h3>🔐 تسجيل دخول مدير الصفحة</h3>
+        <div class="error-msg" id="loginError">البريد الإلكتروني أو كلمة المرور غير صحيحة</div>
+        <div class="form-group">
+            <label>البريد الإلكتروني للمدير</label>
+            <input type="email" id="loginEmail" dir="ltr" placeholder="admin@botola.ma">
+        </div>
+        <div class="form-group">
+            <label>كلمة المرور</label>
+            <input type="password" id="loginPass" dir="ltr" placeholder="••••••">
+        </div>
+        <p style="font-size:11px;color:#8df2ff;margin-bottom:8px">
+            بيانات الدخول الافتراضية: <b>admin@botola.ma</b> / <b>123456</b>
+        </p>
+        <div class="modal-actions">
+            <button onclick="closeModal('loginModal')">إلغاء</button>
+            <button class="primary" onclick="submitAdminLogin()">دخول</button>
+        </div>
+    </div>
+</div>
+
+<!-- نافذة إعدادات حساب المدير -->
+<div class="modal-backdrop" id="adminSettingsModal">
+    <div class="modal">
+        <h3>⚙️ تحديث بيانات دخول المدير</h3>
+        <div class="form-group">
+            <label>البريد الإلكتروني الجديد</label>
+            <input type="email" id="newAdminEmail" dir="ltr">
+        </div>
+        <div class="form-group">
+            <label>كلمة المرور الجديدة</label>
+            <input type="text" id="newAdminPass" dir="ltr">
+        </div>
+        <div class="modal-actions">
+            <button onclick="closeModal('adminSettingsModal')">إلغاء</button>
+            <button class="primary" onclick="saveAdminCredentials()">حفظ التغييرات</button>
+        </div>
+    </div>
+</div>
+
+<!-- نافذة تعديل شعار وحالة الفريق -->
+<div class="modal-backdrop" id="teamModal">
+    <div class="modal">
+        <h3 id="modalTeamTitle">تعديل شعار وحالة الفريق</h3>
+        <div class="form-group">
+            <label>رابط صورة الشعار (PNG / SVG / JPG)</label>
+            <input type="text" id="modalLogoUrl" dir="ltr" placeholder="https://example.com/logo.png" oninput="previewTeamLogo(this.value)">
+            <div class="logo-preview-box" id="logoPreviewBox">PNG</div>
+        </div>
+        <div class="form-group">
+            <label>لون الشريط الجانبي (التأهل / الهبوط)</label>
+            <select id="modalTeamStatus">
+                <option value="caf-cl">أصفر - دوري أبطال إفريقيا (1-2)</option>
+                <option value="caf-cc">أخضر - كأس الكونفدرالية (3)</option>
+                <option value="none">بدون شريط ملون</option>
+                <option value="playoff">برتقالي - تصفيات الهبوط (13-14)</option>
+                <option value="relegation">أحمر - الهبوط المباشر (15-16)</option>
+            </select>
+        </div>
+        <div class="modal-actions">
+            <button onclick="closeModal('teamModal')">إلغاء</button>
+            <button class="primary" onclick="saveTeamModal()">حفظ</button>
+        </div>
+    </div>
+</div>
+
+<!-- نافذة إضافة / تعديل مباراة -->
+<div class="modal-backdrop" id="matchModal">
+    <div class="modal">
+        <h3 id="matchModalTitle">إضافة / تعديل مباراة</h3>
+        <div class="form-row-2">
+            <div class="form-group">
+                <label>الفريق المستضيف</label>
+                <select id="mHomeIdx"></select>
+            </div>
+            <div class="form-group">
+                <label>الفريق الضيف</label>
+                <select id="mAwayIdx"></select>
+            </div>
+        </div>
+        <div class="form-row-2">
+            <div class="form-group">
+                <label>أهداف المستضيف</label>
+                <input type="number" id="mHomeScore" min="0" value="0">
+            </div>
+            <div class="form-group">
+                <label>أهداف الضيف</label>
+                <input type="number" id="mAwayScore" min="0" value="0">
+            </div>
+        </div>
+        <div class="form-row-2">
+            <div class="form-group">
+                <label>حالة المباراة والعداد</label>
+                <select id="mState">
+                    <option value="upcoming">لم تبدأ (توقيت)</option>
+                    <option value="1H">الشوط الأول (0' ➔ 45')</option>
+                    <option value="HT">استراحة ما بين الشوطين (شوط)</option>
+                    <option value="2H">الشوط الثاني (45' ➔ 90')</option>
+                    <option value="FT">انتهت المباراة (انتهى + احتساب النقاط)</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>الدقيقة الحالية أو التوقيت</label>
+                <input type="text" id="mMinuteOrTime" placeholder="مثال: 0 أو 20:00">
+            </div>
+        </div>
+        <div class="form-group">
+            <label>رابط البث المباشر (YouTube / .m3u8 / .m3u / .ts)</label>
+            <input type="text" id="mVideoUrl" dir="ltr" placeholder="https://... (.m3u8 / .m3u / .ts / youtube)">
+        </div>
+        <div class="modal-actions">
+            <button onclick="closeModal('matchModal')">إلغاء</button>
+            <button class="success" onclick="saveMatchModal()">💾 حفظ وتشغيل</button>
+        </div>
+    </div>
+</div>
+
+<!-- نافذة تأكيد مخصصة (بديل confirm) -->
+<div class="modal-backdrop" id="confirmModal">
+    <div class="modal" style="max-width:340px;text-align:center">
+        <h3 id="confirmModalTitle">تأكيد الإجراء</h3>
+        <p id="confirmModalText" style="font-size:13px;color:#dceafa;margin-bottom:14px;line-height:1.6"></p>
+        <div class="modal-actions" style="justify-content:center">
+            <button onclick="closeModal('confirmModal')">إلغاء</button>
+            <button class="danger" id="confirmModalOkBtn">تأكيد</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const KEYS = {
+        TEAMS: 'botola_glass_teams_v3',
+        MATCHES: 'botola_glass_matches_v3',
+        TITLE: 'botola_glass_title_v3',
+        ADMIN_CREDS: 'botola_glass_admin_creds_v3',
+        ADMIN_SESSION: 'botola_glass_admin_session_v3'
+    };
+
+    const defaultAdminCreds = {
+        email: 'admin@botola.ma',
+        pass: '123456'
+    };
+
+    const defaultTeams = [
+        { name: "الكوكب المراكشي", played: 7, gf: 10, ga: 6, points: 16, status: "caf-cl", color: "#991b1b", short: "KACM", logo: "" },
+        { name: "النادي المكناسي", played: 7, gf: 10, ga: 4, points: 14, status: "caf-cl", color: "#dc2626", short: "CODM", logo: "" },
+        { name: "الرجاء البيضاوي", played: 7, gf: 7, ga: 5, points: 12, status: "caf-cc", color: "#15803d", short: "RCA", logo: "" },
+        { name: "الوداد الرياضي", played: 7, gf: 9, ga: 3, points: 11, status: "none", color: "#b91c1c", short: "WAC", logo: "" },
+        { name: "الجيش الملكي", played: 6, gf: 9, ga: 5, points: 11, status: "none", color: "#166534", short: "FAR", logo: "" },
+        { name: "المغرب الفاسي", played: 7, gf: 6, ga: 5, points: 11, status: "none", color: "#ca8a04", short: "MAS", logo: "" },
+        { name: "اتحاد طنجة", played: 7, gf: 8, ga: 9, points: 10, status: "none", color: "#1d4ed8", short: "IRT", logo: "" },
+        { name: "حسنية أكادير", played: 7, gf: 14, ga: 12, points: 9, status: "none", color: "#dc2626", short: "HUSA", logo: "" },
+        { name: "الفتح الرباطي", played: 7, gf: 4, ga: 5, points: 8, status: "none", color: "#9f1239", short: "FUS", logo: "" },
+        { name: "الدفاع الحسني الجديدي", played: 7, gf: 14, ga: 16, points: 8, status: "none", color: "#15803d", short: "DHJ", logo: "" },
+        { name: "اتحاد تواركة", played: 7, gf: 4, ga: 6, points: 8, status: "none", color: "#eab308", short: "UTS", logo: "" },
+        { name: "نهضة بركان", played: 6, gf: 6, ga: 4, points: 8, status: "none", color: "#ea580c", short: "RSB", logo: "" },
+        { name: "إتحاد أمل تيزنيت", played: 7, gf: 8, ga: 12, points: 7, status: "playoff", color: "#2563eb", short: "USAT", logo: "" },
+        { name: "الوداد الرياضي تمارة", played: 7, gf: 5, ga: 7, points: 6, status: "playoff", color: "#1e40af", short: "WST", logo: "" },
+        { name: "المغرب التطواني", played: 7, gf: 2, ga: 10, points: 3, status: "relegation", color: "#dc2626", short: "MAT", logo: "" },
+        { name: "نهضة الزمامرة", played: 7, gf: 6, ga: 13, points: 2, status: "relegation", color: "#0284c7", short: "RCAZ", logo: "" }
+    ];
+
+    const defaultMatches = [
+        {
+            id: 101,
+            homeName: "الرجاء البيضاوي",
+            awayName: "الوداد الرياضي",
+            homeScore: 1,
+            awayScore: 1,
+            state: "1H",
+            minute: 20,
+            kickoffTime: "20:00",
+            videoUrl: "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8",
+            counted: false,
+            countedHomeGoals: 0,
+            countedAwayGoals: 0,
+            countedResult: null
+        },
+        {
+            id: 102,
+            homeName: "الجيش الملكي",
+            awayName: "نهضة بركان",
+            homeScore: 2,
+            awayScore: 0,
+            state: "HT",
+            minute: 45,
+            kickoffTime: "22:00",
+            videoUrl: "",
+            counted: false,
+            countedHomeGoals: 0,
+            countedAwayGoals: 0,
+            countedResult: null
+        }
+    ];
+
+    function safeLoad(key, fallback) {
+        try {
+            const raw = localStorage.getItem(key);
+            return raw ? JSON.parse(raw) : JSON.parse(JSON.stringify(fallback));
+        } catch (e) {
+            return JSON.parse(JSON.stringify(fallback));
+        }
+    }
+
+    let teams = safeLoad(KEYS.TEAMS, defaultTeams);
+    let matches = safeLoad(KEYS.MATCHES, defaultMatches);
+    let adminCreds = safeLoad(KEYS.ADMIN_CREDS, defaultAdminCreds);
+    let isAdmin = false;
+    try { isAdmin = localStorage.getItem(KEYS.ADMIN_SESSION) === 'true'; } catch (e) {}
+
+    let isEditMode = false;
+    let fastSimulation = false;
+    let currentView = 'matches';
+    let currentPlayerMatchId = null;
+    let editingTeamIndex = null;
+    let editingMatchId = null;
+    let pendingConfirmAction = null;
+
+    // مراجع مشغلات البث المباشر للتنظيف عند تغيير المباراة
+    let activeHls = null;
+    let activeMpegts = null;
+    let currentM3uChannels = [];
+
+    try {
+        const savedTitle = localStorage.getItem(KEYS.TITLE);
+        if (savedTitle) {
+            document.getElementById('leagueTitle').textContent = savedTitle;
+        }
+    } catch (e) {}
+
+    /* إشعارات ونافذة تأكيد مخصصة بدون alert أو confirm */
+    let toastTimeout = null;
+    function showToast(msg) {
+        const el = document.getElementById('toastBanner');
+        el.textContent = msg;
+        el.classList.add('show');
+        clearTimeout(toastTimeout);
+        toastTimeout = setTimeout(() => el.classList.remove('show'), 2600);
+    }
+
+    function openConfirmModal(title, text, onConfirm) {
+        document.getElementById('confirmModalTitle').textContent = title;
+        document.getElementById('confirmModalText').textContent = text;
+        pendingConfirmAction = onConfirm;
+        document.getElementById('confirmModal').classList.add('open');
+    }
+
+    document.getElementById('confirmModalOkBtn').onclick = () => {
+        if (pendingConfirmAction) pendingConfirmAction();
+        pendingConfirmAction = null;
+        closeModal('confirmModal');
+    };
+
+    function saveAll() {
+        try {
+            localStorage.setItem(KEYS.TEAMS, JSON.stringify(teams));
+            localStorage.setItem(KEYS.MATCHES, JSON.stringify(matches));
+            localStorage.setItem(KEYS.TITLE, document.getElementById('leagueTitle').textContent.trim());
+        } catch (e) {}
+    }
+
+    function getTeamByName(name) {
+        return teams.find(t => t.name === name) || { name, color: '#334155', short: name.slice(0, 3), logo: '' };
+    }
+
+    function getAutoStatus(index, total) {
+        if (index === 0 || index === 1) return "caf-cl";
+        if (index === 2) return "caf-cc";
+        if (total >= 14 && (index === total - 4 || index === total - 3)) return "playoff";
+        if (total >= 6 && index >= total - 2) return "relegation";
+        return "none";
+    }
+
+    function renderCrest(team) {
+        if (team.logo) {
+            return `<div class="crest"><img src="${team.logo}" alt="${team.name}" onerror="this.parentElement.style.background='${team.color || '#334155'}'; this.parentElement.innerHTML='${team.short || '⚽'}'"></div>`;
+        }
+        return `<div class="crest" style="background:${team.color || '#334155'}">${team.short || team.name.slice(0, 3)}</div>`;
+    }
+
+    /* إدارة صلاحيات المدير والزوار */
+    function updateAdminUI() {
+        document.getElementById('loginOpenBtn').classList.toggle('hidden', isAdmin);
+        document.getElementById('adminSettingsBtn').classList.toggle('hidden', !isAdmin);
+        document.getElementById('logoutBtn').classList.toggle('hidden', !isAdmin);
+        document.getElementById('adminToolbar').classList.toggle('hidden', !isAdmin);
+        document.getElementById('playerAdminControls').classList.toggle('hidden', !isAdmin);
+
+        if (!isAdmin && isEditMode) {
+            isEditMode = false;
+        }
+        renderAll();
+    }
+
+    function openLoginModal() {
+        document.getElementById('loginError').style.display = 'none';
+        document.getElementById('loginEmail').value = '';
+        document.getElementById('loginPass').value = '';
+        document.getElementById('loginModal').classList.add('open');
+    }
+
+    function submitAdminLogin() {
+        const email = document.getElementById('loginEmail').value.trim().toLowerCase();
+        const pass = document.getElementById('loginPass').value;
+        if (email === adminCreds.email.toLowerCase() && pass === adminCreds.pass) {
+            isAdmin = true;
+            try { localStorage.setItem(KEYS.ADMIN_SESSION, 'true'); } catch (e) {}
+            closeModal('loginModal');
+            updateAdminUI();
+            showToast('🔓 تم تسجيل دخول المدير بنجاح');
+        } else {
+            document.getElementById('loginError').style.display = 'block';
+        }
+    }
+
+    function logoutAdmin() {
+        isAdmin = false;
+        isEditMode = false;
+        try { localStorage.setItem(KEYS.ADMIN_SESSION, 'false'); } catch (e) {}
+        updateAdminUI();
+        showToast('🔒 تم تسجيل الخروج - وضع الزائر');
+    }
+
+    function openAdminSettingsModal() {
+        document.getElementById('newAdminEmail').value = adminCreds.email;
+        document.getElementById('newAdminPass').value = adminCreds.pass;
+        document.getElementById('adminSettingsModal').classList.add('open');
+    }
+
+    function saveAdminCredentials() {
+        const email = document.getElementById('newAdminEmail').value.trim();
+        const pass = document.getElementById('newAdminPass').value.trim();
+        if (email && pass) {
+            adminCreds = { email, pass };
+            try { localStorage.setItem(KEYS.ADMIN_CREDS, JSON.stringify(adminCreds)); } catch (e) {}
+            closeModal('adminSettingsModal');
+            showToast('✅ تم تحديث بيانات دخول المدير');
+        }
+    }
+
+    /* التنقل بين الصفحات */
+    function switchView(view) {
+        currentView = view;
+        document.getElementById('viewMatches').classList.toggle('hidden', view !== 'matches');
+        document.getElementById('viewStandings').classList.toggle('hidden', view !== 'standings');
+        document.getElementById('viewStats').classList.toggle('hidden', view !== 'stats');
+        document.getElementById('viewPlayer').classList.toggle('hidden', view !== 'player');
+
+        document.getElementById('navMatches').classList.toggle('active', view === 'matches' || view === 'player');
+        document.getElementById('navStandings').classList.toggle('active', view === 'standings');
+        document.getElementById('navStats').classList.toggle('active', view === 'stats');
+
+        if (view !== 'player') {
+            destroyStreamPlayers();
+        }
+
+        if (view === 'standings') renderStandings();
+        if (view === 'stats') renderStats();
+        if (view === 'matches') renderMatches();
+    }
+
+    /* احتساب النقاط وتحديث الترتيب تلقائياً عند انتهاء المباراة */
+    function applyMatchToStandings(match) {
+        const home = teams.find(t => t.name === match.homeName);
+        const away = teams.find(t => t.name === match.awayName);
+        if (!home || !away || home === away) return;
+
+        if (match.counted) {
+            home.played = Math.max(0, home.played - 1);
+            away.played = Math.max(0, away.played - 1);
+            home.gf -= match.countedHomeGoals;
+            home.ga -= match.countedAwayGoals;
+            away.gf -= match.countedAwayGoals;
+            away.ga -= match.countedHomeGoals;
+            if (match.countedResult === 'H') home.points -= 3;
+            else if (match.countedResult === 'A') away.points -= 3;
+            else if (match.countedResult === 'D') { home.points -= 1; away.points -= 1; }
+        }
+
+        const hg = Number(match.homeScore) || 0;
+        const ag = Number(match.awayScore) || 0;
+
+        home.played += 1;
+        away.played += 1;
+        home.gf += hg;
+        home.ga += ag;
+        away.gf += ag;
+        away.ga += hg;
+
+        if (hg > ag) {
+            home.points += 3;
+            match.countedResult = 'H';
+        } else if (ag > hg) {
+            away.points += 3;
+            match.countedResult = 'A';
+        } else {
+            home.points += 1;
+            away.points += 1;
+            match.countedResult = 'D';
+        }
+
+        match.counted = true;
+        match.countedHomeGoals = hg;
+        match.countedAwayGoals = ag;
+
+        sortStandings(false);
+        saveAll();
+    }
+
+    function revertMatchFromStandings(match) {
+        if (!match.counted) return;
+        const home = teams.find(t => t.name === match.homeName);
+        const away = teams.find(t => t.name === match.awayName);
+        if (home && away) {
+            home.played = Math.max(0, home.played - 1);
+            away.played = Math.max(0, away.played - 1);
+            home.gf -= match.countedHomeGoals;
+            home.ga -= match.countedAwayGoals;
+            away.gf -= match.countedAwayGoals;
+            away.ga -= match.countedHomeGoals;
+            if (match.countedResult === 'H') home.points -= 3;
+            else if (match.countedResult === 'A') away.points -= 3;
+            else if (match.countedResult === 'D') { home.points -= 1; away.points -= 1; }
+        }
+        match.counted = false;
+        match.countedResult = null;
+    }
+
+    function advanceMinutes() {
+        let changed = false;
+        matches.forEach(m => {
+            if (m.state === '1H') {
+                m.minute = (Number(m.minute) || 0) + 1;
+                if (m.minute >= 45) {
+                    m.minute = 45;
+                    m.state = 'HT';
+                }
+                changed = true;
+            } else if (m.state === '2H') {
+                m.minute = (Number(m.minute) || 45) + 1;
+                if (m.minute >= 90) {
+                    m.minute = 90;
+                    m.state = 'FT';
+                    applyMatchToStandings(m);
+                    showToast(`🏆 انتهت مباراة ${m.homeName} و ${m.awayName} وتم تحديث الترتيب`);
+                }
+                changed = true;
+            }
+        });
+
+        if (changed) {
+            saveAll();
+            if (currentView === 'matches') renderMatches();
+            if (currentView === 'standings') renderStandings();
+            if (currentView === 'player' && currentPlayerMatchId) renderPlayerHeader();
+        }
+    }
+
+    /* العداد التلقائي للأشواط (0->45 ثم شوط بالأخضر، 45->90 ثم انتهى بالأحمر) */
+    setInterval(advanceMinutes, 60000);
+
+    let fastTimer = null;
+    function toggleSimSpeed() {
+        fastSimulation = !fastSimulation;
+        const btn = document.getElementById('speedBtn');
+        if (fastSimulation) {
+            btn.textContent = '⚡ تسريع نشط (1ث=1د)';
+            btn.classList.add('success');
+            fastTimer = setInterval(advanceMinutes, 1000);
+            showToast('⚡ تم تفعيل التسريع: 1 ثانية = 1 دقيقة');
+        } else {
+            btn.textContent = '⚡ سرعة عادية';
+            btn.classList.remove('success');
+            clearInterval(fastTimer);
+            showToast('⏱️ تمت العودة للسرعة العادية');
+        }
+    }
+
+    /* عرض قائمة المباريات */
+    function getMatchStatusBadge(m) {
+        if (m.state === '1H' || m.state === '2H') {
+            return `<span class="match-time-status status-live">'${m.minute}</span>`;
+        }
+        if (m.state === 'HT') {
+            return `<span class="match-time-status status-ht">شوط</span>`;
+        }
+        if (m.state === 'FT') {
+            return `<span class="match-time-status status-ft">انتهى</span>`;
+        }
+        return `<span class="match-time-status status-upcoming">${m.kickoffTime || '20:00'}</span>`;
+    }
+
+    function renderMatches() {
+        const list = document.getElementById('matchesList');
+        list.innerHTML = '';
+
+        if (matches.length === 0) {
+            list.innerHTML = `<div style="padding:24px;text-align:center;color:#a9cce8;font-size:13px">لا توجد مباريات مضافة حالياً</div>`;
+            return;
+        }
+
+        matches.forEach(m => {
+            const home = getTeamByName(m.homeName);
+            const away = getTeamByName(m.awayName);
+            const scoreText = m.state === 'upcoming' ? '- : -' : `${m.homeScore} - ${m.awayScore}`;
+            const streamInfo = m.videoUrl ? detectStreamType(m.videoUrl) : null;
+
+            const wrapper = document.createElement('div');
+            wrapper.innerHTML = `
+                <div class="match-row" onclick="openMatchPlayer(${m.id})">
+                    <div class="match-team home">
+                        ${renderCrest(home)}
+                        <span class="match-team-name">${home.name}</span>
+                    </div>
+                    <div class="match-center">
+                        ${getMatchStatusBadge(m)}
+                        <div class="match-score">${scoreText}</div>
+                        ${streamInfo ? `<span class="stream-pill">▶ ${streamInfo.label}</span>` : ''}
+                    </div>
+                    <div class="match-team away">
+                        <span class="match-team-name">${away.name}</span>
+                        ${renderCrest(away)}
+                    </div>
+                </div>
+                ${isAdmin ? `
+                <div class="match-admin-strip">
+                    <button class="success" onclick="quickStartHalf(${m.id}, '1H')">▶ ش1 (0')</button>
+                    <button class="warning" onclick="quickStartHalf(${m.id}, 'HT')">⏸ شوط</button>
+                    <button class="primary" onclick="quickStartHalf(${m.id}, '2H')">▶ ش2 (45')</button>
+                    <button class="danger" onclick="quickFinishMatch(${m.id})">🏁 انتهى (+نقاط)</button>
+                    <button onclick="openMatchModal(${m.id})">✏️ تعديل</button>
+                    <button class="danger" onclick="deleteMatch(${m.id})">🗑</button>
+                </div>` : ''}
+            `;
+            list.appendChild(wrapper);
+        });
+    }
+
+    function quickStartHalf(id, halfState) {
+        const m = matches.find(x => x.id === id);
+        if (!m) return;
+        if (m.counted) revertMatchFromStandings(m);
+        m.state = halfState;
+        m.minute = halfState === '1H' ? 0 : 45;
+        saveAll();
+        renderMatches();
+        renderStandings();
+    }
+
+    function quickFinishMatch(id) {
+        const m = matches.find(x => x.id === id);
+        if (!m) return;
+        m.state = 'FT';
+        m.minute = 90;
+        applyMatchToStandings(m);
+        renderMatches();
+        renderStandings();
+        showToast('🏆 تم إنهاء المباراة واحتساب النقاط');
+    }
+
+    function deleteMatch(id) {
+        const idx = matches.findIndex(x => x.id === id);
+        if (idx === -1) return;
+        const m = matches[idx];
+        openConfirmModal('حذف المباراة', `هل تريد حذف مباراة "${m.homeName} ضد ${m.awayName}"؟`, () => {
+            revertMatchFromStandings(m);
+            matches.splice(idx, 1);
+            saveAll();
+            renderMatches();
+            renderStandings();
+            showToast('🗑️ تم حذف المباراة');
+        });
+    }
+
+    /* =========================================================================
+       مشغل الفيديو الشامل (YouTube + HLS .m3u8 + قوائم .m3u + بث .ts)
+       ========================================================================= */
+    function detectStreamType(rawUrl) {
+        const url = (rawUrl || '').trim();
+        const lower = url.toLowerCase();
+
+        const ytReg = /(?:youtube\.com\/(?:watch\?v=|embed\/|v\/|shorts\/|live\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
+        const ytMatch = url.match(ytReg);
+        if (ytMatch) {
+            return { type: 'youtube', id: ytMatch[1], label: 'YOUTUBE' };
+        }
+        if (/^[a-zA-Z0-9_-]{11}$/.test(url)) {
+            return { type: 'youtube', id: url, label: 'YOUTUBE' };
+        }
+        if (lower.includes('.m3u8')) {
+            return { type: 'hls', url, label: 'HLS / M3U8' };
+        }
+        if (lower.endsWith('.m3u') || lower.includes('.m3u?')) {
+            return { type: 'm3u_playlist', url, label: 'M3U LIST' };
+        }
+        if (lower.includes('.ts') || lower.includes('mpegts') || /:\d+\/live\//.test(lower)) {
+            return { type: 'ts', url, label: 'LIVE TS' };
+        }
+        if (lower.includes('.mp4') || lower.includes('.webm')) {
+            return { type: 'native_video', url, label: 'VIDEO' };
+        }
+        return { type: 'hls_or_auto', url, label: 'LIVE STREAM' };
+    }
+
+    function destroyStreamPlayers() {
+        if (activeHls) {
+            try { activeHls.destroy(); } catch (e) {}
+            activeHls = null;
+        }
+        if (activeMpegts) {
+            try {
+                activeMpegts.pause();
+                activeMpegts.unload();
+                activeMpegts.detachMediaElement();
+                activeMpegts.destroy();
+            } catch (e) {}
+            activeMpegts = null;
+        }
+    }
+
+    function setPlayerStatus(msg, isInfo = false) {
+        const el = document.getElementById('playerStatusMsg');
+        if (!msg) {
+            el.style.display = 'none';
+            el.textContent = '';
+            return;
+        }
+        el.textContent = msg;
+        el.className = isInfo ? 'player-status-msg info' : 'player-status-msg';
+        el.style.display = 'block';
+    }
+
+    function openMatchPlayer(id) {
+        currentPlayerMatchId = id;
+        switchView('player');
+        renderPlayerHeader();
+
+        const m = matches.find(x => x.id === id);
+        const url = m ? (m.videoUrl || '').trim() : '';
+        document.getElementById('videoUrlInput').value = url;
+        playStreamUrl(url);
+    }
+
+    function renderPlayerHeader() {
+        const m = matches.find(x => x.id === currentPlayerMatchId);
+        if (!m) return;
+        const home = getTeamByName(m.homeName);
+        const away = getTeamByName(m.awayName);
+        const scoreText = m.state === 'upcoming' ? '- : -' : `${m.homeScore} - ${m.awayScore}`;
+
+        document.getElementById('playerMatchHeader').innerHTML = `
+            <div class="match-row" style="cursor:default;background:rgba(6,29,53,0.45)">
+                <div class="match-team home">
+                    ${renderCrest(home)}
+                    <span class="match-team-name">${home.name}</span>
+                </div>
+                <div class="match-center">
+                    ${getMatchStatusBadge(m)}
+                    <div class="match-score">${scoreText}</div>
+                </div>
+                <div class="match-team away">
+                    <span class="match-team-name">${away.name}</span>
+                    ${renderCrest(away)}
+                </div>
+            </div>
+        `;
+    }
+
+    async function playStreamUrl(rawUrl) {
+        destroyStreamPlayers();
+        setPlayerStatus('');
+        const container = document.getElementById('videoContainer');
+        const extBar = document.getElementById('externalWatchBar');
+        const extLink = document.getElementById('externalWatchLink');
+        const badge = document.getElementById('playerStreamBadge');
+        const playlistBox = document.getElementById('m3uPlaylistBox');
+        playlistBox.classList.add('hidden');
+
+        const url = (rawUrl || '').trim();
+        if (!url) {
+            badge.textContent = 'NO STREAM';
+            extBar.classList.add('hidden');
+            container.innerHTML = `
+                <div class="video-placeholder">
+                    <span style="font-size:32px">📺</span>
+                    <span>لا يوجد رابط بث مضاف لهذه المباراة حالياً</span>
+                </div>`;
+            return;
+        }
+
+        const info = detectStreamType(url);
+        badge.textContent = info.label;
+        extBar.classList.remove('hidden');
+
+        if (info.type === 'youtube') {
+            const watchUrl = `https://www.youtube.com/watch?v=${info.id}`;
+            extLink.href = watchUrl;
+            extLink.textContent = '↗ فتح الفيديو مباشرة على يوتيوب';
+            container.innerHTML = `
+                <iframe
+                    src="https://www.youtube-nocookie.com/embed/${info.id}?autoplay=1&rel=0&modestbranding=1&playsinline=1"
+                    title="مشغل يوتيوب"
+                    referrerpolicy="strict-origin-when-cross-origin"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    allowfullscreen>
+                </iframe>`;
+            return;
+        }
+
+        extLink.href = url;
+        extLink.textContent = '↗ فتح رابط البث في مشغل خارجي / تبويب جديد';
+
+        if (info.type === 'm3u_playlist') {
+            setPlayerStatus('جاري قراءة قائمة القنوات M3U...', true);
+            try {
+                const res = await fetch(url);
+                const text = await res.text();
+                const channels = parseM3UContent(text);
+                if (channels.length > 0) {
+                    currentM3uChannels = channels;
+                    renderM3uChannelList(channels);
+                    setPlayerStatus(`تم العثور على ${channels.length} قناة في القائمة`, true);
+                    playDirectMediaStream(channels[0].url);
+                    return;
+                }
+            } catch (err) {
+                setPlayerStatus('تعذر قراءة ملف M3U بسبب قيود CORS من المصدر، جاري محاولة التشغيل المباشر...');
+            }
+        }
+
+        playDirectMediaStream(url, info.type);
+    }
+
+    function parseM3UContent(m3uText) {
+        const lines = m3uText.split(/\r?\n/);
+        const channels = [];
+        let currentTitle = '';
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i].trim();
+            if (!line) continue;
+            if (line.startsWith('#EXTINF:')) {
+                const commaIdx = line.lastIndexOf(',');
+                currentTitle = commaIdx !== -1 ? line.slice(commaIdx + 1).trim() : `قناة ${channels.length + 1}`;
+            } else if (!line.startsWith('#')) {
+                channels.push({
+                    title: currentTitle || `قناة ${channels.length + 1}`,
+                    url: line
+                });
+                currentTitle = '';
+            }
+        }
+        return channels;
+    }
+
+    function renderM3uChannelList(channels) {
+        const box = document.getElementById('m3uPlaylistBox');
+        const list = document.getElementById('m3uChannelsList');
+        box.classList.remove('hidden');
+        list.innerHTML = '';
+
+        channels.forEach((ch, idx) => {
+            const btn = document.createElement('button');
+            btn.className = `m3u-ch-btn ${idx === 0 ? 'active' : ''}`;
+            btn.textContent = ch.title;
+            btn.onclick = () => {
+                document.querySelectorAll('.m3u-ch-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                playDirectMediaStream(ch.url);
+            };
+            list.appendChild(btn);
+        });
+    }
+
+    function playDirectMediaStream(streamUrl, forcedType) {
+        destroyStreamPlayers();
+        const container = document.getElementById('videoContainer');
+        container.innerHTML = `<video id="liveVideoEl" controls autoplay playsinline></video>`;
+        const videoEl = document.getElementById('liveVideoEl');
+        const type = forcedType || detectStreamType(streamUrl).type;
+
+        if (type === 'ts') {
+            if (window.mpegts && mpegts.getFeatureList().mseLivePlayback) {
+                activeMpegts = mpegts.createPlayer({
+                    type: 'mpegts',
+                    isLive: true,
+                    url: streamUrl
+                }, {
+                    enableStashBuffer: false,
+                    liveBufferLatencyChasing: true
+                });
+                activeMpegts.attachMediaElement(videoEl);
+                activeMpegts.load();
+                activeMpegts.play().catch(() => {});
+                activeMpegts.on(mpegts.Events.ERROR, () => {
+                    setPlayerStatus('تعذر تشغيل بث TS داخل المتصفح (قد يكون الرابط متوقفاً أو محمياً بـ HTTP/CORS). جرّب فتحه خارجياً.');
+                });
+            } else {
+                videoEl.src = streamUrl;
+            }
+            return;
+        }
+
+        if (type === 'native_video') {
+            videoEl.src = streamUrl;
+            videoEl.play().catch(() => {});
+            return;
+        }
+
+        // محرك HLS لتشغيل .m3u8 وروابط البث المباشر
+        if (window.Hls && Hls.isSupported()) {
+            activeHls = new Hls({
+                enableWorker: true,
+                lowLatencyMode: true,
+                backBufferLength: 60
+            });
+            activeHls.loadSource(streamUrl);
+            activeHls.attachMedia(videoEl);
+            activeHls.on(Hls.Events.MANIFEST_PARSED, () => {
+                setPlayerStatus('');
+                videoEl.play().catch(() => {});
+            });
+            activeHls.on(Hls.Events.ERROR, (event, data) => {
+                if (data.fatal) {
+                    if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
+                        setPlayerStatus('انقطع الاتصال بالسيرفر أو أن السيرفر يمنع التشغيل من المتصفح (CORS). جاري إعادة المحاولة...');
+                        activeHls.startLoad();
+                    } else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
+                        activeHls.recoverMediaError();
+                    } else {
+                        destroyStreamPlayers();
+                        setPlayerStatus('تعذر تشغيل الرابط داخل المتصفح. يمكنك الضغط على زر الفتح الخارجي بالأسفل.');
+                    }
+                }
+            });
+        } else if (videoEl.canPlayType('application/vnd.apple.mpegurl')) {
+            videoEl.src = streamUrl;
+            videoEl.addEventListener('loadedmetadata', () => videoEl.play().catch(() => {}));
+        } else {
+            videoEl.src = streamUrl;
+        }
+    }
+
+    function saveMatchVideo() {
+        const m = matches.find(x => x.id === currentPlayerMatchId);
+        if (!m) return;
+        const raw = document.getElementById('videoUrlInput').value.trim();
+        m.videoUrl = raw;
+        saveAll();
+        renderMatches();
+        playStreamUrl(raw);
+        showToast('🎬 تم حفظ وتشغيل رابط البث');
+    }
+
+    /* نافذة إضافة / تعديل مباراة */
+    function openMatchModal(id = null) {
+        editingMatchId = id;
+        const homeSel = document.getElementById('mHomeIdx');
+        const awaySel = document.getElementById('mAwayIdx');
+        homeSel.innerHTML = '';
+        awaySel.innerHTML = '';
+
+        teams.forEach((t, i) => {
+            homeSel.innerHTML += `<option value="${i}">${t.name}</option>`;
+            awaySel.innerHTML += `<option value="${i}">${t.name}</option>`;
+        });
+
+        if (id) {
+            const m = matches.find(x => x.id === id);
+            document.getElementById('matchModalTitle').textContent = 'تعديل المباراة';
+            const hIdx = Math.max(0, teams.findIndex(t => t.name === m.homeName));
+            const aIdx = Math.max(0, teams.findIndex(t => t.name === m.awayName));
+            homeSel.value = hIdx;
+            awaySel.value = aIdx;
+            document.getElementById('mHomeScore').value = m.homeScore;
+            document.getElementById('mAwayScore').value = m.awayScore;
+            document.getElementById('mState').value = m.state;
+            document.getElementById('mMinuteOrTime').value = m.state === 'upcoming' ? (m.kickoffTime || '20:00') : m.minute;
+            document.getElementById('mVideoUrl').value = m.videoUrl || '';
+        } else {
+            document.getElementById('matchModalTitle').textContent = 'إضافة مباراة جديدة';
+            homeSel.value = 0;
+            awaySel.value = teams.length > 1 ? 1 : 0;
+            document.getElementById('mHomeScore').value = 0;
+            document.getElementById('mAwayScore').value = 0;
+            document.getElementById('mState').value = '1H';
+            document.getElementById('mMinuteOrTime').value = '0';
+            document.getElementById('mVideoUrl').value = '';
+        }
+
+        document.getElementById('matchModal').classList.add('open');
+    }
+
+    function saveMatchModal() {
+        const hIdx = Number(document.getElementById('mHomeIdx').value);
+        const aIdx = Number(document.getElementById('mAwayIdx').value);
+        if (hIdx === aIdx) {
+            showToast('⚠️ يرجى اختيار فريقين مختلفين');
+            return;
+        }
+
+        const homeName = teams[hIdx].name;
+        const awayName = teams[aIdx].name;
+        const homeScore = Number(document.getElementById('mHomeScore').value) || 0;
+        const awayScore = Number(document.getElementById('mAwayScore').value) || 0;
+        const state = document.getElementById('mState').value;
+        const minOrTime = document.getElementById('mMinuteOrTime').value.trim();
+        const videoUrl = document.getElementById('mVideoUrl').value.trim();
+
+        let minute = 0;
+        let kickoffTime = '20:00';
+        if (state === 'upcoming') {
+            kickoffTime = minOrTime || '20:00';
+        } else if (state === '1H') {
+            minute = Math.min(44, Math.max(0, parseInt(minOrTime, 10) || 0));
+        } else if (state === 'HT') {
+            minute = 45;
+        } else if (state === '2H') {
+            minute = Math.min(89, Math.max(45, parseInt(minOrTime, 10) || 45));
+        } else if (state === 'FT') {
+            minute = 90;
+        }
+
+        if (editingMatchId) {
+            const m = matches.find(x => x.id === editingMatchId);
+            if (m) {
+                if (state !== 'FT' && m.counted) revertMatchFromStandings(m);
+                Object.assign(m, { homeName, awayName, homeScore, awayScore, state, minute, kickoffTime, videoUrl });
+                if (state === 'FT') applyMatchToStandings(m);
+            }
+        } else {
+            const newMatch = {
+                id: Date.now(),
+                homeName,
+                awayName,
+                homeScore,
+                awayScore,
+                state,
+                minute,
+                kickoffTime,
+                videoUrl,
+                counted: false,
+                countedHomeGoals: 0,
+                countedAwayGoals: 0,
+                countedResult: null
+            };
+            matches.unshift(newMatch);
+            if (state === 'FT') applyMatchToStandings(newMatch);
+        }
+
+        saveAll();
+        closeModal('matchModal');
+        renderMatches();
+        renderStandings();
+        showToast('✅ تم حفظ المباراة');
+    }
+
+    /* جدول الترتيب */
+    function renderStandings() {
+        const container = document.getElementById('teamsContainer');
+        const header = document.getElementById('tableHeader');
+        const titleEl = document.getElementById('leagueTitle');
+        document.getElementById('teamsCountLabel').textContent = `${teams.length} فريقاً`;
+
+        const canEdit = isAdmin && isEditMode;
+        header.className = canEdit ? 'table-head edit-mode' : 'table-head';
+        titleEl.contentEditable = canEdit;
+        titleEl.onblur = saveAll;
+
+        if (canEdit && header.children.length === 6) {
+            const delCol = document.createElement('span');
+            delCol.textContent = '';
+            header.appendChild(delCol);
+        } else if (!canEdit && header.children.length === 7) {
+            header.removeChild(header.lastElementChild);
+        }
+
+        container.innerHTML = '';
+
+        teams.forEach((team, idx) => {
+            const diff = team.gf - team.ga;
+            const diffStr = diff > 0 ? `+${diff}` : `${diff}`;
+            const row = document.createElement('div');
+            row.className = `team-row status-${team.status} ${canEdit ? 'edit-mode' : ''}`;
+
+            row.innerHTML = `
+                <b>${idx + 1}</b>
+                <div class="teamname">
+                    <div onclick="${canEdit ? `openTeamModal(${idx})` : ''}" style="cursor:${canEdit ? 'pointer' : 'default'}" title="${canEdit ? 'تعديل الشعار ولون المركز' : ''}">
+                        ${renderCrest(team)}
+                    </div>
+                    <span class="team-label ${canEdit ? 'editable-field' : ''}" contenteditable="${canEdit}" onblur="updateTeamField(${idx}, 'name', this.textContent)">${team.name}</span>
+                </div>
+                <span class="stat-num ${canEdit ? 'editable-field' : ''}" contenteditable="${canEdit}" onblur="updateTeamField(${idx}, 'played', this.textContent)">${team.played}</span>
+                <span class="stat-num ${canEdit ? 'editable-field' : ''}" contenteditable="${canEdit}" onblur="updateTeamGoals(${idx}, this.textContent)">${team.ga}:${team.gf}</span>
+                <span class="stat-num">${diffStr}</span>
+                <span class="stat-num pts ${canEdit ? 'editable-field' : ''}" contenteditable="${canEdit}" onblur="updateTeamField(${idx}, 'points', this.textContent)">${team.points}</span>
+                ${canEdit ? `<button class="danger" style="padding:3px 6px;font-size:11px" onclick="deleteTeam(${idx})">✕</button>` : ''}
+            `;
+            container.appendChild(row);
+        });
+    }
+
+    function toggleEditMode() {
+        if (!isAdmin) return;
+        isEditMode = !isEditMode;
+        const btn = document.getElementById('toggleEditBtn');
+        btn.textContent = isEditMode ? '✅ إنهاء التعديل' : '✏️ تفعيل التعديل';
+        btn.classList.toggle('success', isEditMode);
+        if (!isEditMode) saveAll();
+        renderStandings();
+    }
+
+    function updateTeamField(index, field, val) {
+        const clean = val.trim();
+        if (field === 'name') {
+            if (clean) {
+                const oldName = teams[index].name;
+                teams[index].name = clean;
+                matches.forEach(m => {
+                    if (m.homeName === oldName) m.homeName = clean;
+                    if (m.awayName === oldName) m.awayName = clean;
+                });
+            }
+        } else {
+            const num = parseInt(clean, 10);
+            if (!isNaN(num)) teams[index][field] = num;
+        }
+        saveAll();
+        renderStandings();
+        renderMatches();
+    }
+
+    function updateTeamGoals(index, val) {
+        const parts = val.trim().split(':');
+        if (parts.length === 2) {
+            const ga = parseInt(parts[0], 10);
+            const gf = parseInt(parts[1], 10);
+            if (!isNaN(ga) && !isNaN(gf)) {
+                teams[index].ga = ga;
+                teams[index].gf = gf;
+            }
+        }
+        saveAll();
+        renderStandings();
+    }
+
+    function sortStandings(shouldSave = true) {
+        teams.sort((a, b) => {
+            if (b.points !== a.points) return b.points - a.points;
+            const diffA = a.gf - a.ga;
+            const diffB = b.gf - b.ga;
+            if (diffB !== diffA) return diffB - diffA;
+            return b.gf - a.gf;
+        });
+
+        teams.forEach((t, i) => {
+            t.status = getAutoStatus(i, teams.length);
+        });
+
+        if (shouldSave) {
+            saveAll();
+            renderStandings();
+            showToast('↻ تم تحديث الترتيب والفارق تلقائياً');
+        }
+    }
+
+    function addNewTeam() {
+        teams.push({
+            name: "فريق جديد",
+            played: 0,
+            gf: 0,
+            ga: 0,
+            points: 0,
+            status: "none",
+            color: "#334155",
+            short: "NEW",
+            logo: ""
+        });
+        if (!isEditMode) toggleEditMode();
+        saveAll();
+        renderStandings();
+        showToast('➕ تمت إضافة فريق جديد');
+    }
+
+    function deleteTeam(index) {
+        const teamName = teams[index].name;
+        openConfirmModal('حذف فريق', `هل تريد حذف "${teamName}" من جدول الترتيب؟`, () => {
+            teams.splice(index, 1);
+            saveAll();
+            renderStandings();
+            showToast(`🗑️ تم حذف ${teamName}`);
+        });
+    }
+
+    /* نافذة الشعار وحالة الفريق */
+    function openTeamModal(index) {
+        editingTeamIndex = index;
+        const team = teams[index];
+        document.getElementById('modalTeamTitle').textContent = `إعدادات: ${team.name}`;
+        document.getElementById('modalLogoUrl').value = team.logo || '';
+        document.getElementById('modalTeamStatus').value = team.status || 'none';
+        previewTeamLogo(team.logo || '');
+        document.getElementById('teamModal').classList.add('open');
+    }
+
+    function previewTeamLogo(url) {
+        const box = document.getElementById('logoPreviewBox');
+        const clean = url.trim();
+        if (clean) {
+            box.innerHTML = `<img src="${clean}" alt="logo" onerror="this.parentElement.textContent='خطأ في الرابط'">`;
+        } else {
+            const t = teams[editingTeamIndex];
+            box.textContent = t ? t.short : 'PNG';
+        }
+    }
+
+    function saveTeamModal() {
+        if (editingTeamIndex === null) return;
+        const team = teams[editingTeamIndex];
+        team.logo = document.getElementById('modalLogoUrl').value.trim();
+        team.status = document.getElementById('modalTeamStatus').value;
+        saveAll();
+        closeModal('teamModal');
+        renderStandings();
+        renderMatches();
+        showToast('✅ تم حفظ شعار وإعدادات الفريق');
+    }
+
+    /* تبويب الإحصائيات */
+    function renderStats() {
+        if (teams.length === 0) return;
+        const leader = [...teams].sort((a, b) => b.points - a.points)[0];
+        const bestAttack = [...teams].sort((a, b) => b.gf - a.gf)[0];
+        const bestDefense = [...teams].sort((a, b) => a.ga - b.ga)[0];
+        const totalGoals = teams.reduce((sum, t) => sum + (Number(t.gf) || 0), 0);
+
+        document.getElementById('statsGrid').innerHTML = `
+            <div class="stat-box">
+                <div class="stat-box-title">🥇 متصدر الدوري</div>
+                <div class="stat-box-value">${leader.name}</div>
+                <div class="stat-box-sub">${leader.points} نقطة</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-box-title">⚽ أقوى هجوم</div>
+                <div class="stat-box-value">${bestAttack.name}</div>
+                <div class="stat-box-sub">${bestAttack.gf} هدف مسجل</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-box-title">🛡️ أقوى دفاع</div>
+                <div class="stat-box-value">${bestDefense.name}</div>
+                <div class="stat-box-sub">استقبل ${bestDefense.ga} أهداف</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-box-title">🔥 مجموع الأهداف</div>
+                <div class="stat-box-value">${totalGoals} هدف</div>
+                <div class="stat-box-sub">عبر جميع الجولات</div>
+            </div>
+        `;
+    }
+
+    function closeModal(id) {
+        document.getElementById(id).classList.remove('open');
+    }
+
+    function openResetConfirm() {
+        openConfirmModal('استعادة البيانات', 'هل تريد استعادة البيانات الافتراضية للمباريات وجدول الترتيب؟', () => {
+            teams = JSON.parse(JSON.stringify(defaultTeams));
+            matches = JSON.parse(JSON.stringify(defaultMatches));
+            document.getElementById('leagueTitle').textContent = 'الدوري المغربي';
+            saveAll();
+            renderAll();
+            showToast('↺ تمت استعادة البيانات الافتراضية');
+        });
+    }
+
+    function exportHTML() {
+        const wasEdit = isEditMode;
+        if (wasEdit) toggleEditMode();
+
+        destroyStreamPlayers();
+        const clone = document.documentElement.cloneNode(true);
+        const scripts = clone.querySelectorAll('script');
+        const currentTitle = document.getElementById('leagueTitle').textContent.trim();
+
+        scripts[scripts.length - 1].textContent = scripts[scripts.length - 1].textContent
+            .replace(/const defaultTeams = \[[\s\S]*?\];/, `const defaultTeams = ${JSON.stringify(teams, null, 4)};`)
+            .replace(/const defaultMatches = \[[\s\S]*?\];/, `const defaultMatches = ${JSON.stringify(matches, null, 4)};`)
+            .replace(/const defaultAdminCreds = \{[\s\S]*?\};/, `const defaultAdminCreds = ${JSON.stringify(adminCreds, null, 4)};`)
+            .replace(/<span id="leagueTitle">.*?<\/span>/, `<span id="leagueTitle">${currentTitle}</span>`);
+
+        const blob = new Blob(['<!DOCTYPE html>\n' + clone.outerHTML], { type: 'text/html;charset=utf-8' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'botola-glass-complete.html';
+        a.click();
+        showToast('💾 تم تصدير ملف HTML مع جميع التعديلات');
+    }
+
+    function renderAll() {
+        renderMatches();
+        renderStandings();
+        renderStats();
+    }
+
+    window.onload = function() {
+        updateAdminUI();
+    };
+</script>
+</body>
+</html>
