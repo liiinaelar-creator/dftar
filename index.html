@@ -79,7 +79,6 @@
             overflow: hidden;
         }
 
-        /* الشريط العلوي المدمج جاهز للشريط الإخباري */
         .header-card {
             padding: 6px 14px;
             min-height: 54px;
@@ -106,7 +105,6 @@
             transition: transform 0.15s ease;
         }
 
-        /* وميض ضوئي متحرك فوق الشعار */
         .league-logo-wrap::before {
             content: '';
             position: absolute;
@@ -126,7 +124,6 @@
             z-index: 2;
         }
 
-        /* لمعة زجاجية علوية شفافة فوق الصورة فقط */
         .league-logo-wrap::after {
             content: '';
             position: absolute;
@@ -855,6 +852,8 @@
             font-size: 12px;
             margin-top: 6px;
             min-height: 18px;
+            direction: ltr;
+            text-align: right;
         }
     </style>
 </head>
@@ -1097,14 +1096,13 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
     import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-    // ضع إعدادات مشروعك في Firebase هنا
     const firebaseConfig = {
-        apiKey: "YOUR_API_KEY",
-        authDomain: "YOUR_PROJECT.firebaseapp.com",
-        projectId: "YOUR_PROJECT_ID",
-        storageBucket: "YOUR_PROJECT.appspot.com",
-        messagingSenderId: "YOUR_SENDER_ID",
-        appId: "YOUR_APP_ID"
+        apiKey: "AIzaSyDysuriqOAODOOBouZqxXMYvh0kNkLqzP4",
+        authDomain: "credit-app-e947f.firebaseapp.com",
+        projectId: "credit-app-e947f",
+        storageBucket: "credit-app-e947f.firebasestorage.app",
+        messagingSenderId: "234194204765",
+        appId: "1:234194204765:web:7bc3c60c2d86d2e6c335b4"
     };
 
     const app = initializeApp(firebaseConfig);
@@ -1219,13 +1217,11 @@
     }
     teams.forEach(ensureTeamHomeAwayFields);
 
-    // مراقبة حالة تسجيل الدخول في Firebase
     onAuthStateChanged(auth, (user) => {
         isAdmin = !!user;
         updateAdminUI();
     });
 
-    // النقر 5 مرات على الشعار لإظهار نافذة دخول Firebase
     window.handleLogoSecretTap = function() {
         secretTapCount++;
         clearTimeout(secretTapTimer);
@@ -1250,11 +1246,6 @@
         return teams.find(t => t.name === name) || { name, color: '#0284c7', short: name.slice(0, 3), logo: '' };
     }
 
-    // تحديد اللون تلقائياً حسب المركز في الترتيب العام:
-    // 1 و 2: أخضر (caf-cl)
-    // 3: أزرق سماوي (caf-cc)
-    // 13 و 14 (rankIndex 12 و 13): برتقالي (playoff)
-    // 15 و 16 (rankIndex 14 و 15 / آخر مركزين): أحمر (relegation)
     function getAutoStatus(rankIndex, total) {
         if (rankIndex === 0 || rankIndex === 1) return 'caf-cl';
         if (rankIndex === 2) return 'caf-cc';
@@ -1318,7 +1309,7 @@
             await signInWithEmailAndPassword(auth, email, pass);
             closeModal('loginModal');
         } catch (error) {
-            errBox.textContent = 'فشل الدخول: تأكد من البريد الإلكتروني وكلمة السر في Firebase.';
+            errBox.textContent = `فشل الدخول (${error.code})`;
         } finally {
             btn.disabled = false;
             btn.textContent = 'دخول';
@@ -1746,7 +1737,6 @@
 
         sortedTeams.forEach((item, rankIndex) => {
             const { team, originalIndex, stats } = item;
-            // الألوان الجانبية تُعطى أوتوماتيكياً حسب المركز في الترتيب العام فقط
             const autoStatus = standingsTab === 'overall'
                 ? getAutoStatus(rankIndex, sortedTeams.length)
                 : 'none';
