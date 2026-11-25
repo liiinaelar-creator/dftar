@@ -1383,9 +1383,11 @@
     </div>
 </div>
 
-<script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, setPersistence, browserSessionPersistence } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+<script>
+    let firebaseMod = null;
+    let authMod = null;
+    let app = null;
+    let auth = null;
 
     // 1. فرض بروتوكول HTTPS إجبارياً على النطاقات المنشورة
     (function enforceHttps() {
@@ -1408,28 +1410,47 @@
     }
 
     const _vaultChunks = [
-        "MCB+KDsjKTs9R0kWMBY3AC4t",
-        "H34rLxs4Jis6FzgBHD09Ky0=",
-        "FC0bPjg8GCU8JyI2Ljs5O2A=",
-        "NDE/Jj4iJ30yKC0rOis8Kig=",
-        "Ny1rJD0mKTwnFyc6JyAvKjE=",
-        "Ny0iKC0/KD0pN2A4Kzg8NSo=",
-        "MS1mOjc3LisoLCE2Kj09fjo=",
-        "MSo8Ni4rK0Y2MT4tOSs6NTY=",
-        "Mj00K20gLC0mKCw8PTc4fjc=",
-        "MywzLDctP30rLTs7Ojo7NCY=",
-        "KjotKT04OC1sOjIrNTt6eXo=",
-        "en0rMzY6KCs4KD4rJ2B5Ozk=",
-        "aD07aGg8b2trZ2w6bGg/bWk=",
-        "Oz5nPT5zPjo4O2U7Y2A1bWg=",
-        "aH0="
+        "OXYtQll5UypneWAVBUhRYU8X",
+        "PDA3JiVDf3N5FwoMADs5aEFK",
+        "bh4cNSpkJ3xbfkcpFXdgeG5T",
+        "RUZeFyouIz0iEAoQVSEgJysg",
+        "YVNAQhs2fHd1MmJUWUBTMSQw",
+        "JzU8Qh5RWT5nb2AkPl1aV1Un",
+        "DCdgbm5RQldSOjFuIyQ8H1UL",
+        "AmQjYW52P0ZfQFc0IAE3NydX",
+        "RBAMcSYxJzAlRh1TRiNoJntg",
+        "e1QeVF8hICEjJylBRF1EMiIm",
+        "bDU8QhIeFD4gMDE1K1teVWU2",
+        "KycnJgVWEggUYXZ3c214AAAG",
+        "AWVwYW52LUJAe1Jxf2Fzbn4B",
+        "BAMPZ3dzdmN6BwpFUzF/dCA3",
+        "f1EGAlVhIXt0MH5XBlEFYHAh",
+        "dnYx"
     ];
-    const firebaseConfig = decodeVault(_vaultChunks, "BTL2026SEC");
-
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    // ربط الجلسة بنافذة المتصفح الحالية فقط (تُغلق تلقائياً عند إغلاق التبويب)
-    setPersistence(auth, browserSessionPersistence).catch(() => {});
+    async function initFirebaseSecure() {
+        try {
+            firebaseMod = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js");
+            authMod = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js");
+            const firebaseConfig = decodeVault(_vaultChunks, "BTL2026SEC");
+            app = firebaseMod.initializeApp(firebaseConfig);
+            auth = authMod.getAuth(app);
+            await authMod.setPersistence(auth, authMod.browserSessionPersistence).catch(() => {});
+            authMod.onAuthStateChanged(auth, async (user) => {
+                if (user) {
+                    isAdmin = true;
+                    const token = await sha256Hex(user.uid + ':' + APP_SALT);
+                    sessionStorage.setItem(SEC_STORAGE.SESSION_TOKEN, token);
+                } else {
+                    isAdmin = false;
+                    isEditMode = false;
+                    sessionStorage.removeItem(SEC_STORAGE.SESSION_TOKEN);
+                }
+                updateAdminUI();
+            });
+        } catch (err) {
+            console.warn("Firebase Auth running in offline/local mode:", err);
+        }
+    }
 
     // 3. إدارة تشفير البيانات في قاعدة التخزين المحلية + التحقق من السلامة
     const SEC_STORAGE = {
@@ -1565,7 +1586,7 @@
 
     // 5. حارس صلاحيات المشرف (قفل جميع وظائف وصفحات الإدارة عن غير المصرح لهم)
     function requireAdminAccess() {
-        const currentUser = auth.currentUser;
+        const currentUser = auth ? auth.currentUser : null;
         const sessionSig = sessionStorage.getItem(SEC_STORAGE.SESSION_TOKEN);
         if (!isAdmin || !currentUser || !sessionSig) {
             isAdmin = false;
@@ -1722,18 +1743,7 @@
     // حفظ النسخة الأولية المشفرة
     saveAll();
 
-    onAuthStateChanged(auth, async (user) => {
-        if (user) {
-            isAdmin = true;
-            const token = await sha256Hex(user.uid + ':' + APP_SALT);
-            sessionStorage.setItem(SEC_STORAGE.SESSION_TOKEN, token);
-        } else {
-            isAdmin = false;
-            isEditMode = false;
-            sessionStorage.removeItem(SEC_STORAGE.SESSION_TOKEN);
-        }
-        updateAdminUI();
-    });
+
 
     window.handleLogoSecretTap = function() {
         secretTapCount++;
@@ -1792,7 +1802,7 @@
         const addScorerBtn = document.getElementById('addScorerBtn');
         const playerUrlBox = document.getElementById('playerAdminUrlBox');
 
-        if (isAdmin && auth.currentUser) {
+        if (isAdmin && auth && auth.currentUser) {
             toolbar.classList.remove('hidden');
             playerUrlBox.classList.remove('hidden');
             toggleBtn.textContent = isEditMode ? '✅ إنهاء التعديل' : '✏️ تفعيل التعديل';
@@ -1845,7 +1855,9 @@
         try {
             // توليد بصمة تشفير محلية SHA-256 للتحقق المزدوج قبل إرسال الجلسة عبر HTTPS إلى Firebase Auth
             await sha256Hex(email.toLowerCase() + ':' + pass + ':' + APP_SALT);
-            await signInWithEmailAndPassword(auth, email, pass);
+            if (!auth || !authMod) await initFirebaseSecure();
+            if (!auth || !authMod) throw new Error('Auth unavailable');
+            await authMod.signInWithEmailAndPassword(auth, email, pass);
             // مسح كلمة السر فوراً من الذاكرة وحقل الإدخال بعد المصادقة
             document.getElementById('loginPassword').value = '';
             resetLoginGuard();
@@ -1869,7 +1881,7 @@
     };
 
     window.logoutAdmin = async function() {
-        await signOut(auth);
+        if (auth && authMod) await authMod.signOut(auth);
         isAdmin = false;
         isEditMode = false;
         sessionStorage.removeItem(SEC_STORAGE.SESSION_TOKEN);
@@ -2877,6 +2889,7 @@
     }
 
     updateAdminUI();
+    initFirebaseSecure();
 </script>
 </body>
 </html>
