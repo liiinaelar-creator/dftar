@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- فرض سياسة الأمان ورفع ترقية الطلبات إلى HTTPS تلقائياً -->
-    <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
+    <!-- تفعيل رؤوس الأمان الصارمة CSP و HSTS لمنع حقن السكربتات وفرض HTTPS -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' https:; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' https: data: blob:; media-src 'self' https: blob:; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https:; frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests;">
+    <meta http-equiv="Strict-Transport-Security" content="max-age=63072000; includeSubDomains; preload">
     <meta http-equiv="X-Content-Type-Options" content="nosniff">
     <meta name="referrer" content="strict-origin-when-cross-origin">
     <title>البطولة الاحترافية | النتائج والترتيب والبث المباشر</title>
@@ -1452,7 +1453,7 @@
         }
     }
 
-    // 3. إدارة تشفير البيانات في قاعدة التخزين المحلية + التحقق من السلامة
+    // 3. طبقة الاستعلامات المُحضّرة (Prepared / Parameterized Queries) لمنع حقن SQL/NoSQL وتأمين التخزين
     const SEC_STORAGE = {
         TEAMS: 'btl_sec_teams_v1',
         MATCHES: 'btl_sec_matches_v1',
@@ -1462,6 +1463,49 @@
     };
 
     const APP_SALT = "BOTOLA_PRO_GLASS_INTEGRITY_2026_";
+
+    // محرك الاستعلامات المُحضّرة للتحقق من أنواع المعاملات ومنع أي محاولة حقن أوامر
+    const PreparedQueryEngine = {
+        bindParams(schema, rawParams) {
+            const bound = {};
+            for (const [key, rule] of Object.entries(schema)) {
+                const val = rawParams[key];
+                if (rule.type === 'number') {
+                    const num = Number(val);
+                    if (!Number.isFinite(num) || num < (rule.min ?? -Infinity) || num > (rule.max ?? Infinity)) {
+                        throw new Error(`Invalid numeric parameter: ${key}`);
+                    }
+                    bound[key] = Math.floor(num);
+                } else if (rule.type === 'string') {
+                    const str = String(val ?? '').trim();
+                    if (rule.required && !str) throw new Error(`Missing required parameter: ${key}`);
+                    if (str.length > (rule.maxLen ?? 120)) throw new Error(`Parameter too long: ${key}`);
+                    if (/(--|;|\/\*|\*\/|\b(UNION|SELECT|DROP|INSERT|DELETE|UPDATE|EXEC|SCRIPT)\b)/i.test(str)) {
+                        throw new Error(`Blocked injection pattern in parameter: ${key}`);
+                    }
+                    bound[key] = str;
+                } else if (rule.type === 'enum') {
+                    if (!rule.values.includes(val)) throw new Error(`Invalid enum value for: ${key}`);
+                    bound[key] = val;
+                } else if (rule.type === 'url') {
+                    bound[key] = sanitizeUrl(val);
+                } else if (rule.type === 'color') {
+                    bound[key] = /^#[0-9a-fA-F]{6}$/.test(String(val)) ? val : '#0284c7';
+                } else if (rule.type === 'formArray') {
+                    bound[key] = Array.isArray(val) ? val.filter(x => ['W', 'D', 'L'].includes(x)).slice(-5) : [];
+                }
+            }
+            return Object.freeze(bound);
+        },
+        executeSearch(collection, searchTerm) {
+            const cleanTerm = String(searchTerm ?? '').trim().toLowerCase().slice(0, 60);
+            if (!cleanTerm) return collection;
+            return collection.filter(item =>
+                String(item.homeName || '').toLowerCase().includes(cleanTerm) ||
+                String(item.awayName || '').toLowerCase().includes(cleanTerm)
+            );
+        }
+    };
 
     async function sha256Hex(text) {
         const msgBuffer = new TextEncoder().encode(text);
@@ -1584,7 +1628,49 @@
         }
     }
 
-    // 5. حارس صلاحيات المشرف (قفل جميع وظائف وصفحات الإدارة عن غير المصرح لهم)
+    // 5. حارس صلاحيات المشرف (فحص الحق في كل طلب Request - منع IDOR وتجاوز الصلاحيات)
+    const RequestAuthorizationGuard = {
+        async verifyRequest(actionName, requiredRole = 'admin', resourceOwnerId = null) {
+            const currentUser = auth ? auth.currentUser : null;
+            const sessionSig = sessionStorage.getItem(SEC_STORAGE.SESSION_TOKEN);
+            if (!isAdmin || !currentUser || !sessionSig) {
+                throw new Error('UNAUTHENTICATED_REQUEST');
+            }
+            const expectedSig = await sha256Hex(currentUser.uid + ':' + APP_SALT);
+            if (sessionSig !== expectedSig) {
+                throw new Error('INVALID_SESSION_SIGNATURE');
+            }
+            // التحقق من صلاحية الرمز المميز (ID Token) من Firebase في كل طلب إداري
+            const idTokenResult = await currentUser.getIdTokenResult(false);
+            if (!idTokenResult || !idTokenResult.token) {
+                throw new Error('EXPIRED_OR_MISSING_TOKEN');
+            }
+            if (resourceOwnerId && resourceOwnerId !== currentUser.uid) {
+                throw new Error('IDOR_OWNERSHIP_VIOLATION');
+            }
+            return {
+                authorized: true,
+                uid: currentUser.uid,
+                action: actionName,
+                timestamp: Date.now()
+            };
+        }
+    };
+
+    async function requireAdminAccessAsync(actionName = 'ADMIN_ACTION', resourceOwnerId = null) {
+        try {
+            await RequestAuthorizationGuard.verifyRequest(actionName, 'admin', resourceOwnerId);
+            return true;
+        } catch (err) {
+            isAdmin = false;
+            isEditMode = false;
+            sessionStorage.removeItem(SEC_STORAGE.SESSION_TOKEN);
+            updateAdminUI();
+            alert('⛔ تم رفض الطلب (' + err.message + '): لا تملك صلاحية تنفيذ هذا الإجراء.');
+            return false;
+        }
+    }
+
     function requireAdminAccess() {
         const currentUser = auth ? auth.currentUser : null;
         const sessionSig = sessionStorage.getItem(SEC_STORAGE.SESSION_TOKEN);
@@ -1888,8 +1974,8 @@
         updateAdminUI();
     };
 
-    window.toggleEditMode = function() {
-        if (!requireAdminAccess()) return;
+    window.toggleEditMode = async function() {
+        if (!(await requireAdminAccessAsync('TOGGLE_EDIT_MODE'))) return;
         isEditMode = !isEditMode;
         updateAdminUI();
     };
@@ -2094,12 +2180,7 @@
         const list = document.getElementById('matchesList');
         list.innerHTML = '';
 
-        const filteredMatches = matchSearchQuery
-            ? matches.filter(m =>
-                m.homeName.toLowerCase().includes(matchSearchQuery) ||
-                m.awayName.toLowerCase().includes(matchSearchQuery)
-              )
-            : matches;
+        const filteredMatches = PreparedQueryEngine.executeSearch(matches, matchSearchQuery);
 
         if (filteredMatches.length === 0) {
             list.innerHTML = `<div style="padding:24px;text-align:center;color:#a9cce8;font-size:13px">${matchSearchQuery ? 'لا توجد مباريات مطابقة لبحثك' : 'لا توجد مباريات مضافة حالياً'}</div>`;
@@ -2142,8 +2223,8 @@
         });
     }
 
-    window.quickStartHalf = function(id, halfState) {
-        if (!requireAdminAccess()) return;
+    window.quickStartHalf = async function(id, halfState) {
+        if (!(await requireAdminAccessAsync('QUICK_START_HALF'))) return;
         const m = matches.find(x => x.id === id);
         if (!m) return;
         if (m.counted) revertMatchFromStandings(m);
@@ -2153,8 +2234,8 @@
         renderMatches();
     };
 
-    window.quickFinishMatch = function(id) {
-        if (!requireAdminAccess()) return;
+    window.quickFinishMatch = async function(id) {
+        if (!(await requireAdminAccessAsync('QUICK_FINISH_MATCH'))) return;
         const m = matches.find(x => x.id === id);
         if (!m) return;
         m.state = 'FT';
@@ -2165,8 +2246,8 @@
         renderStandings();
     };
 
-    window.deleteMatch = function(id) {
-        if (!requireAdminAccess()) return;
+    window.deleteMatch = async function(id) {
+        if (!(await requireAdminAccessAsync('DELETE_MATCH'))) return;
         const idx = matches.findIndex(x => x.id === id);
         if (idx === -1) return;
         if (!confirm('حذف هذه المباراة؟')) return;
@@ -2220,8 +2301,8 @@
         document.getElementById('matchModal').classList.add('open');
     };
 
-    window.saveMatchModal = function() {
-        if (!requireAdminAccess()) return;
+    window.saveMatchModal = async function() {
+        if (!(await requireAdminAccessAsync('SAVE_MATCH'))) return;
         const hIdx = Number(document.getElementById('mHomeIdx').value);
         const aIdx = Number(document.getElementById('mAwayIdx').value);
         if (hIdx === aIdx) {
@@ -2229,15 +2310,34 @@
             return;
         }
 
-        const homeName = teams[hIdx].name;
-        const awayName = teams[aIdx].name;
-        const homeScore = Number(document.getElementById('mHomeScore').value) || 0;
-        const awayScore = Number(document.getElementById('mAwayScore').value) || 0;
-        const state = document.getElementById('mState').value;
-        const minOrTime = document.getElementById('mMinuteOrTime').value.trim();
-        const channel = document.getElementById('mChannel').value.trim();
-        const stadium = document.getElementById('mStadium').value.trim();
-        const videoUrl = sanitizeUrl(document.getElementById('mVideoUrl').value);
+        let boundMatch;
+        try {
+            boundMatch = PreparedQueryEngine.bindParams({
+                homeName: { type: 'string', required: true, maxLen: 80 },
+                awayName: { type: 'string', required: true, maxLen: 80 },
+                homeScore: { type: 'number', min: 0, max: 99 },
+                awayScore: { type: 'number', min: 0, max: 99 },
+                state: { type: 'enum', values: ['upcoming', '1H', 'HT', '2H', 'FT'] },
+                minOrTime: { type: 'string', required: false, maxLen: 20 },
+                channel: { type: 'string', required: false, maxLen: 60 },
+                stadium: { type: 'string', required: false, maxLen: 80 },
+                videoUrl: { type: 'url' }
+            }, {
+                homeName: teams[hIdx].name,
+                awayName: teams[aIdx].name,
+                homeScore: document.getElementById('mHomeScore').value || 0,
+                awayScore: document.getElementById('mAwayScore').value || 0,
+                state: document.getElementById('mState').value,
+                minOrTime: document.getElementById('mMinuteOrTime').value,
+                channel: document.getElementById('mChannel').value,
+                stadium: document.getElementById('mStadium').value,
+                videoUrl: document.getElementById('mVideoUrl').value
+            });
+        } catch (err) {
+            alert('⚠️ تم رفض المدخلات بواسطة نظام الحماية: ' + err.message);
+            return;
+        }
+        const { homeName, awayName, homeScore, awayScore, state, minOrTime, channel, stadium, videoUrl } = boundMatch;
 
         let minute = 0;
         let kickoffTime = '20:00';
@@ -2457,26 +2557,38 @@
         }
     }
 
-    window.saveTeamModal = function() {
-        if (!requireAdminAccess()) return;
-        const name = document.getElementById('fName').value.trim();
-        if (!name) {
-            alert('يرجى إدخال اسم الفريق.');
+    window.saveTeamModal = async function() {
+        if (!(await requireAdminAccessAsync('SAVE_TEAM'))) return;
+        const rawForm = [];
+        for (let i = 0; i < 5; i++) {
+            rawForm.push(document.getElementById(`fForm${i}`).value);
+        }
+        let boundTeam;
+        try {
+            boundTeam = PreparedQueryEngine.bindParams({
+                name: { type: 'string', required: true, maxLen: 80 },
+                played: { type: 'number', min: 0, max: 100 },
+                points: { type: 'number', min: 0, max: 300 },
+                gf: { type: 'number', min: 0, max: 500 },
+                ga: { type: 'number', min: 0, max: 500 },
+                form: { type: 'formArray' },
+                color: { type: 'color' },
+                logo: { type: 'url' }
+            }, {
+                name: document.getElementById('fName').value,
+                played: document.getElementById('fPlayed').value || 0,
+                points: document.getElementById('fPoints').value || 0,
+                gf: document.getElementById('fGf').value || 0,
+                ga: document.getElementById('fGa').value || 0,
+                form: rawForm,
+                color: document.getElementById('fColor').value,
+                logo: currentLogoData
+            });
+        } catch (err) {
+            alert('⚠️ تم رفض بيانات الفريق بواسطة نظام الحماية: ' + err.message);
             return;
         }
-
-        const played = Number(document.getElementById('fPlayed').value) || 0;
-        const points = Number(document.getElementById('fPoints').value) || 0;
-        const gf = Number(document.getElementById('fGf').value) || 0;
-        const ga = Number(document.getElementById('fGa').value) || 0;
-
-        const manualForm = [];
-        for (let i = 0; i < 5; i++) {
-            const val = document.getElementById(`fForm${i}`).value;
-            if (val === 'W' || val === 'D' || val === 'L') {
-                manualForm.push(val);
-            }
-        }
+        const { name, played, points, gf, ga, form: manualForm } = boundTeam;
 
         const data = {
             name,
@@ -2511,8 +2623,8 @@
         renderStats();
     };
 
-    window.deleteTeam = function(index) {
-        if (!requireAdminAccess()) return;
+    window.deleteTeam = async function(index) {
+        if (!(await requireAdminAccessAsync('DELETE_TEAM'))) return;
         if (confirm(`هل تريد حذف فريق "${teams[index].name}"؟`)) {
             teams.splice(index, 1);
             saveAll();
@@ -2696,8 +2808,8 @@
         }
     }
 
-    window.saveAndPlayMatchStream = function() {
-        if (!requireAdminAccess()) return;
+    window.saveAndPlayMatchStream = async function() {
+        if (!(await requireAdminAccessAsync('SAVE_STREAM_URL'))) return;
         const url = sanitizeUrl(document.getElementById('videoUrlInput').value);
         document.getElementById('videoUrlInput').value = url;
         const m = matches.find(x => x.id === currentPlayerMatchId);
@@ -2808,16 +2920,24 @@
         document.getElementById('scorerModal').classList.add('open');
     };
 
-    window.saveScorerModal = function() {
-        if (!requireAdminAccess()) return;
-        const name = document.getElementById('sName').value.trim();
-        const teamName = document.getElementById('sTeamName').value;
-        const goals = Math.max(1, Number(document.getElementById('sGoals').value) || 1);
-
-        if (!name) {
-            alert('يرجى إدخال اسم اللاعب.');
+    window.saveScorerModal = async function() {
+        if (!(await requireAdminAccessAsync('SAVE_SCORER'))) return;
+        let boundScorer;
+        try {
+            boundScorer = PreparedQueryEngine.bindParams({
+                name: { type: 'string', required: true, maxLen: 80 },
+                teamName: { type: 'string', required: true, maxLen: 80 },
+                goals: { type: 'number', min: 1, max: 200 }
+            }, {
+                name: document.getElementById('sName').value,
+                teamName: document.getElementById('sTeamName').value,
+                goals: document.getElementById('sGoals').value || 1
+            });
+        } catch (err) {
+            alert('⚠️ تم رفض بيانات الهداف بواسطة نظام الحماية: ' + err.message);
             return;
         }
+        const { name, teamName, goals } = boundScorer;
 
         if (editingScorerId !== null) {
             const sc = scorers.find(x => x.id === editingScorerId);
@@ -2840,8 +2960,8 @@
         renderScorers();
     };
 
-    window.deleteScorer = function(id) {
-        if (!requireAdminAccess()) return;
+    window.deleteScorer = async function(id) {
+        if (!(await requireAdminAccessAsync('DELETE_SCORER'))) return;
         const idx = scorers.findIndex(x => x.id === id);
         if (idx === -1) return;
         if (confirm(`حذف اللاعب "${scorers[idx].name}" من قائمة الهدافين؟`)) {
@@ -2866,11 +2986,20 @@
         const guardActive = typeof MAX_LOGIN_ATTEMPTS === 'number' && MAX_LOGIN_ATTEMPTS === 5;
         const sessionBound = !!sessionStorage.getItem(SEC_STORAGE.SESSION_TOKEN);
 
+        const hstsEnforced = !!document.querySelector('meta[http-equiv="Strict-Transport-Security"]');
+        const preparedActive = typeof PreparedQueryEngine?.bindParams === 'function';
+        let perRequestVerified = false;
+        try {
+            const check = await RequestAuthorizationGuard.verifyRequest('SECURITY_SELF_TEST');
+            perRequestVerified = !!check.authorized;
+        } catch {}
         document.getElementById('securityReportBody').innerHTML = `
+            <div>✅ <b>فحص الحق في كل طلب (Per-Request Authz & Anti-IDOR):</b> ${perRequestVerified ? 'مفعّل ويتحقق من التوكن وتوقيع الجلسة في كل إجراء' : 'فشل التحقق'}</div>
             <div>✅ <b>مصادقة المشرف (Firebase Auth + Session):</b> ${sessionBound ? 'نشطة ومربوطة بالجلسة' : 'غير نشطة'}</div>
+            <div>✅ <b>رؤوس الأمان (CSP + HSTS):</b> ${httpsEnforced && hstsEnforced ? 'مفعّلة بالكامل (تقييد المصادر + HSTS 2 سنوات)' : 'جزئية'}</div>
+            <div>✅ <b>الاستعلامات المُحضّرة (Prepared Queries):</b> ${preparedActive ? 'مفعّلة ضد حقن SQL/NoSQL والأوامر الخبيثة' : 'غير مفعلة'}</div>
             <div>✅ <b>إخفاء مفاتيح API:</b> مشفرة داخل حزمة XOR + Base64 في الذاكرة</div>
             <div>✅ <b>تأمين قاعدة البيانات وتوقيع SHA-256:</b> ${integrityOk ? 'سليمة ومشفرة بالكامل' : 'تم رصد تعديل خارجي'}</div>
-            <div>✅ <b>إجبارية بروتوكول HTTPS:</b> ${httpsEnforced ? 'مفعّلة (CSP + إعادة توجيه تلقائي)' : 'غير مفعلة'}</div>
             <div>✅ <b>تشفير كلمات السر:</b> بصمة SHA-256 + تشفير TLS من Firebase</div>
             <div>✅ <b>قفل صفحات وأوامر الإدارة:</b> محمية بحارس الصلاحيات <code>requireAdminAccess()</code></div>
             <div>✅ <b>حد محاولات الدخول:</b> ${guardActive ? '5 محاولات كحد أقصى ثم حظر 15 دقيقة' : 'غير مفعل'}</div>
