@@ -1,0 +1,2021 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>البطولة الاحترافية | النتائج والترتيب والبث المباشر</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <!-- مكتبات تشغيل البث المباشر HLS (m3u8) و MPEG-TS (.ts) -->
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.15/dist/hls.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mpegts.js@1.7.3/dist/mpegts.min.js"></script>
+    <style>
+        :root {
+            --cyan: #26dfff;
+            --blue: #087ccb;
+            --silver: #dceafa;
+            --glass: rgba(150, 190, 225, 0.14);
+            --glass-dark: rgba(6, 29, 53, 0.72);
+            --line: rgba(220, 240, 255, 0.28);
+            --accent-caf-cl: #ffd54a;     /* دوري أبطال إفريقيا */
+            --accent-caf-cc: #00d6a0;     /* كأس الكونفدرالية */
+            --accent-playoff: #ff922b;    /* تصفيات الهبوط 13 و 14 */
+            --accent-relegation: #ff536b; /* الهبوط 15 و 16 */
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Cairo', Arial, sans-serif;
+        }
+
+        body {
+            min-height: 100vh;
+            padding: 14px 12px 74px;
+            color: #f5faff;
+            background:
+                radial-gradient(ellipse at 12% 0%, rgba(20, 100, 160, 0.45), transparent 44%),
+                radial-gradient(ellipse at 90% 80%, rgba(125, 155, 190, 0.22), transparent 44%),
+                linear-gradient(145deg, #041326, #0b2949 55%, #3a546e);
+            background-attachment: fixed;
+        }
+
+        .app {
+            width: min(100%, 560px);
+            margin: auto;
+        }
+
+        /* البطاقات الزجاجية 3D */
+        .glass {
+            background: var(--glass);
+            border: 1px solid var(--line);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            box-shadow: inset 0 1px 3px rgba(255, 255, 255, 0.16), 0 12px 32px rgba(0, 16, 32, 0.35);
+        }
+
+        header, .panel, .dock, .player-card {
+            border-radius: 22px;
+        }
+
+        /* الرأس العلوي: شعار البطولة مصغر مكان الإعدادات + أزرار المدير */
+        header {
+            padding: 8px 14px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            margin-bottom: 12px;
+            min-height: 56px;
+        }
+
+        .botola-logo-trigger {
+            width: 38px;
+            height: 44px;
+            border-radius: 11px;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #ffffff;
+            border: 1px solid rgba(255, 255, 255, 0.85);
+            box-shadow: 0 4px 12px rgba(0, 16, 31, 0.5), 0 0 12px rgba(38, 223, 255, 0.25);
+            cursor: pointer;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            transition: transform 0.15s ease;
+            flex-shrink: 0;
+            padding: 1px;
+        }
+
+        .botola-logo-trigger:active {
+            transform: scale(0.92);
+        }
+
+        .botola-logo-trigger img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            border-radius: 9px;
+            pointer-events: none;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+        }
+
+        /* الأزرار الزجاجية ثلاثية الأبعاد */
+        button, .btn {
+            font: 700 12px 'Cairo', sans-serif;
+            cursor: pointer;
+            color: #fff;
+            border: 1px solid rgba(201, 231, 255, 0.3);
+            background: rgba(167, 201, 227, 0.16);
+            border-radius: 12px;
+            padding: 7px 11px;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            text-decoration: none;
+        }
+
+        button:hover, .btn:hover {
+            background: rgba(167, 201, 227, 0.28);
+        }
+
+        button:active, .btn:active {
+            transform: translateY(2px) scale(0.96);
+        }
+
+        button.primary, .btn.primary {
+            background: linear-gradient(115deg, #087ccb, #19bdf0, #4383ed);
+            border-color: #b9f1ff;
+            box-shadow: 0 5px 13px rgba(0, 26, 59, 0.5), inset 0 2px 5px rgba(255, 255, 255, 0.45), 0 0 15px rgba(38, 223, 255, 0.3);
+        }
+
+        button.success {
+            background: linear-gradient(115deg, #059669, #10b981);
+            border-color: #a7f3d0;
+            box-shadow: 0 4px 12px rgba(5, 150, 105, 0.4);
+        }
+
+        button.danger {
+            background: rgba(239, 68, 68, 0.22);
+            border-color: rgba(255, 83, 107, 0.6);
+            color: #ffc9d1;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* البطاقات */
+        .panel {
+            overflow: hidden;
+            margin-bottom: 14px;
+        }
+
+        .panel-head {
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(157, 200, 237, 0.1);
+            border-bottom: 1px solid rgba(217, 237, 255, 0.18);
+            font-weight: 800;
+            font-size: 15px;
+        }
+
+        .panel-head-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .big-icon {
+            font-size: 18px;
+            display: inline-block;
+            filter: drop-shadow(0 3px 2px rgba(0, 16, 31, 0.6)) drop-shadow(0 0 6px rgba(38, 223, 255, 0.4));
+        }
+
+        .live-badge-top {
+            font-size: 11px;
+            color: #8df2ff;
+            background: rgba(38, 223, 255, 0.14);
+            border: 1px solid rgba(38, 223, 255, 0.35);
+            padding: 3px 9px;
+            border-radius: 20px;
+            font-weight: 700;
+        }
+
+        /* بطاقة المباريات */
+        .match-row {
+            display: grid;
+            grid-template-columns: 1fr 94px 1fr;
+            align-items: center;
+            padding: 13px 12px;
+            border-bottom: 1px solid rgba(217, 237, 255, 0.12);
+            background: rgba(169, 201, 229, 0.08);
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .match-row:nth-child(even) {
+            background: rgba(215, 232, 245, 0.05);
+        }
+
+        .match-row:hover {
+            background: rgba(38, 223, 255, 0.16);
+        }
+
+        .match-team {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            min-width: 0;
+        }
+
+        .match-team.home {
+            justify-content: flex-start;
+            text-align: right;
+        }
+
+        .match-team.away {
+            justify-content: flex-end;
+            text-align: left;
+        }
+
+        .match-team-name {
+            font-size: 13px;
+            font-weight: 700;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .match-center {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 2px;
+        }
+
+        .match-time-status {
+            font-size: 11px;
+            font-weight: 800;
+            padding: 1px 7px;
+            border-radius: 8px;
+        }
+
+        .status-live {
+            color: #ff6b81;
+            animation: pulseText 1.4s infinite;
+        }
+
+        .status-ht {
+            color: #00e6ac;
+            background: rgba(0, 214, 160, 0.15);
+        }
+
+        .status-ft {
+            color: #ff536b;
+            background: rgba(255, 83, 107, 0.15);
+        }
+
+        .status-upcoming {
+            color: #a9cce8;
+        }
+
+        @keyframes pulseText {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.45; }
+        }
+
+        .match-score {
+            font-size: 17px;
+            font-weight: 800;
+            letter-spacing: 1px;
+            direction: ltr;
+            color: #ffffff;
+            text-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+        }
+
+        .match-admin-strip {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            justify-content: center;
+            padding: 7px 10px;
+            background: rgba(4, 19, 38, 0.65);
+            border-bottom: 1px solid rgba(217, 237, 255, 0.16);
+        }
+
+        .match-admin-strip button {
+            padding: 4px 8px;
+            font-size: 11px;
+            border-radius: 8px;
+        }
+
+        .panel-footer-link {
+            display: block;
+            width: 100%;
+            text-align: center;
+            padding: 11px;
+            background: rgba(6, 29, 53, 0.55);
+            color: #b8d9f5;
+            font-size: 13px;
+            font-weight: 700;
+            border: none;
+            border-radius: 0;
+        }
+
+        .panel-footer-link:hover {
+            background: rgba(38, 223, 255, 0.18);
+            color: #fff;
+        }
+
+        /* جدول الترتيب */
+        .table-head, .team-row {
+            display: grid;
+            grid-template-columns: 32px 1fr 40px 58px 40px 42px;
+            align-items: center;
+            gap: 4px;
+            padding: 10px 10px;
+            text-align: center;
+            position: relative;
+        }
+
+        .table-head.edit-mode, .team-row.edit-mode {
+            grid-template-columns: 28px 1fr 38px 54px 36px 40px 28px;
+        }
+
+        .table-head {
+            font-size: 11px;
+            font-weight: 700;
+            color: #b8d3e9;
+            background: var(--glass-dark);
+            border-bottom: 1px solid rgba(217, 237, 255, 0.2);
+        }
+
+        .team-row {
+            font-size: 13px;
+            border-bottom: 1px solid rgba(217, 237, 255, 0.1);
+            background: rgba(169, 201, 229, 0.1);
+            transition: background 0.15s;
+        }
+
+        .team-row:nth-child(even) {
+            background: rgba(215, 232, 245, 0.05);
+        }
+
+        .team-row:hover {
+            background: rgba(38, 223, 255, 0.18);
+        }
+
+        /* أشرطة التأهل والهبوط الجانبية المضيئة */
+        .team-row::before {
+            content: "";
+            position: absolute;
+            right: 0;
+            top: 3px;
+            bottom: 3px;
+            width: 4px;
+            border-radius: 3px 0 0 3px;
+        }
+
+        .status-caf-cl::before {
+            background: var(--accent-caf-cl);
+            box-shadow: 0 0 8px var(--accent-caf-cl);
+        }
+        .status-caf-cc::before {
+            background: var(--accent-caf-cc);
+            box-shadow: 0 0 8px var(--accent-caf-cc);
+        }
+        .status-playoff::before {
+            background: var(--accent-playoff);
+            box-shadow: 0 0 8px var(--accent-playoff);
+        }
+        .status-relegation::before {
+            background: var(--accent-relegation);
+            box-shadow: 0 0 8px var(--accent-relegation);
+        }
+
+        .teamname {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            text-align: right;
+            font-weight: 700;
+            min-width: 0;
+        }
+
+        .team-label {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* الشعار ثلاثي الأبعاد */
+        .crest {
+            width: 30px;
+            height: 30px;
+            flex: none;
+            border-radius: 50%;
+            display: grid;
+            place-items: center;
+            font: 800 8px Arial, sans-serif;
+            color: #fff;
+            border: 1px solid rgba(255, 255, 255, 0.65);
+            box-shadow: 0 5px 8px rgba(0, 16, 31, 0.6), inset 0 2px 5px rgba(255, 255, 255, 0.45), 0 0 9px rgba(38, 223, 255, 0.25);
+            text-shadow: 0 2px 3px rgba(0, 0, 0, 0.6);
+            overflow: hidden;
+            position: relative;
+        }
+
+        .crest img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 2px;
+        }
+
+        .stat-num {
+            direction: ltr;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .pts {
+            font-weight: 800;
+            color: #ffffff;
+            font-size: 14px;
+        }
+
+        [contenteditable="true"].editable-field {
+            background: rgba(38, 223, 255, 0.18);
+            outline: 1px dashed var(--cyan);
+            border-radius: 6px;
+            padding: 2px 4px;
+            cursor: text;
+        }
+
+        /* مفتاح الألوان */
+        .legend {
+            padding: 12px 15px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            font-size: 11px;
+            color: #dcebf7;
+            background: rgba(6, 29, 53, 0.45);
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+        }
+
+        .dot {
+            display: inline-block;
+            width: 9px;
+            height: 9px;
+            border-radius: 50%;
+            box-shadow: 0 0 8px currentColor;
+            flex-shrink: 0;
+        }
+
+        /* صفحة مشغل الفيديو */
+        .player-header-box {
+            padding: 12px 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(217, 237, 255, 0.18);
+            background: rgba(157, 200, 237, 0.08);
+        }
+
+        .video-wrapper {
+            position: relative;
+            width: 100%;
+            padding-top: 56.25%;
+            background: #020912;
+        }
+
+        .video-wrapper iframe,
+        .video-wrapper video {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            border: 0;
+            background: #000;
+        }
+
+        .video-placeholder {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            color: #a9cce8;
+            font-size: 13px;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .player-status-msg {
+            padding: 8px 14px;
+            font-size: 12px;
+            text-align: center;
+            background: rgba(255, 83, 107, 0.18);
+            color: #ffc9d1;
+            border-top: 1px solid rgba(255, 83, 107, 0.35);
+            display: none;
+        }
+
+        .player-status-msg.info {
+            background: rgba(38, 223, 255, 0.14);
+            color: #bceeff;
+            border-top-color: rgba(38, 223, 255, 0.3);
+        }
+
+        .m3u-playlist-box {
+            padding: 12px 15px;
+            border-top: 1px solid rgba(217, 237, 255, 0.18);
+            background: rgba(4, 19, 38, 0.55);
+        }
+
+        .m3u-playlist-title {
+            font-size: 12px;
+            font-weight: 700;
+            color: #8df2ff;
+            margin-bottom: 8px;
+        }
+
+        .m3u-channels-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            max-height: 145px;
+            overflow-y: auto;
+        }
+
+        .m3u-ch-btn {
+            font-size: 11px;
+            padding: 5px 10px;
+            border-radius: 9px;
+            background: rgba(167, 201, 227, 0.14);
+        }
+
+        .m3u-ch-btn.active {
+            background: linear-gradient(115deg, #087ccb, #19bdf0);
+            border-color: #b9f1ff;
+        }
+
+        .video-controls-admin {
+            padding: 13px 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            background: rgba(6, 29, 53, 0.65);
+            border-top: 1px solid rgba(217, 237, 255, 0.18);
+        }
+
+        .video-input-row {
+            display: flex;
+            gap: 8px;
+        }
+
+        /* تبويب الإحصائيات */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            padding: 14px;
+        }
+
+        .stat-box {
+            background: rgba(6, 29, 53, 0.52);
+            border: 1px solid rgba(217, 237, 255, 0.18);
+            border-radius: 16px;
+            padding: 12px;
+            text-align: center;
+        }
+
+        .stat-box-title {
+            font-size: 11px;
+            color: #a9cce8;
+            margin-bottom: 4px;
+        }
+
+        .stat-box-value {
+            font-size: 16px;
+            font-weight: 800;
+            color: #fff;
+        }
+
+        .stat-box-sub {
+            font-size: 11px;
+            color: #8df2ff;
+            margin-top: 2px;
+        }
+
+        /* الشريط السفلي العائم المصغّر (Compact Dock) */
+        .dock {
+            width: min(calc(100% - 24px), 360px);
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding: 5px 8px;
+            gap: 4px;
+            position: fixed;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 900;
+            border-radius: 18px;
+            background: rgba(9, 35, 60, 0.85);
+            box-shadow: 0 10px 24px rgba(0, 16, 31, 0.65), inset 0 1px 3px rgba(255, 255, 255, 0.25);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+        }
+
+        .dock button {
+            flex: 1;
+            border: 0;
+            background: transparent;
+            box-shadow: none;
+            padding: 4px 2px;
+            color: #c2d8ea;
+            font-size: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+        }
+
+        .dock .nav-icon {
+            width: 28px;
+            height: 28px;
+            display: grid;
+            place-items: center;
+            border-radius: 10px;
+            font-size: 15px;
+            background: linear-gradient(145deg, rgba(255, 255, 255, 0.2), rgba(78, 141, 179, 0.18));
+            border: 1px solid rgba(217, 242, 255, 0.3);
+            transition: all 0.2s ease;
+        }
+
+        .dock button.active {
+            color: #ffffff;
+        }
+
+        .dock button.active .nav-icon {
+            background: linear-gradient(145deg, #4be8ff, #1376c6);
+            border-color: #d9f7ff;
+            box-shadow: 0 4px 10px rgba(38, 223, 255, 0.45);
+            transform: translateY(-2px) scale(1.05);
+        }
+
+        /* النوافذ المنبثقة (Modals) */
+        .modal-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(2, 10, 22, 0.8);
+            backdrop-filter: blur(8px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1200;
+            padding: 16px;
+        }
+
+        .modal-backdrop.open {
+            display: flex;
+        }
+
+        .modal {
+            width: 100%;
+            max-width: 410px;
+            border-radius: 22px;
+            padding: 20px;
+            background: linear-gradient(155deg, rgba(14, 48, 84, 0.94), rgba(6, 24, 46, 0.96));
+            border: 1px solid rgba(220, 240, 255, 0.35);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7);
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal h3 {
+            font-size: 16px;
+            margin-bottom: 14px;
+            color: #fff;
+        }
+
+        .form-group {
+            margin-bottom: 12px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 12px;
+            color: #b8d3e9;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+
+        .form-group input, .form-group select, .video-input-row input {
+            width: 100%;
+            padding: 9px 11px;
+            border-radius: 11px;
+            border: 1px solid rgba(217, 237, 255, 0.3);
+            background: rgba(4, 19, 38, 0.75);
+            color: #fff;
+            font-size: 13px;
+            outline: none;
+        }
+
+        .form-group input:focus, .form-group select:focus, .video-input-row input:focus {
+            border-color: var(--cyan);
+            box-shadow: 0 0 10px rgba(38, 223, 255, 0.25);
+        }
+
+        .form-row-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+            margin-top: 15px;
+        }
+
+        .logo-preview-box {
+            width: 52px;
+            height: 52px;
+            border-radius: 50%;
+            margin: 8px auto 0;
+            display: grid;
+            place-items: center;
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            background: rgba(255, 255, 255, 0.1);
+            overflow: hidden;
+            font-weight: 800;
+            font-size: 12px;
+        }
+
+        .logo-preview-box img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            background: #fff;
+            padding: 3px;
+        }
+
+        .error-msg {
+            color: #ff6b81;
+            font-size: 12px;
+            margin-bottom: 8px;
+            display: none;
+        }
+
+        @media (max-width: 390px) {
+            .table-head, .team-row { grid-template-columns: 26px 1fr 34px 48px 34px 36px; padding: 9px 7px; font-size: 12px; }
+            .match-team-name { font-size: 12px; }
+            .match-row { grid-template-columns: 1fr 82px 1fr; padding: 11px 8px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="app">
+    <!-- الرأس العلوي: شعار البطولة الاحترافية (الضغط 3 مرات متتالية يفتح دخول المدير) -->
+    <header class="glass">
+        <div class="botola-logo-trigger" id="botolaLogoTrigger" onclick="handleLogoSecretTap()" title="البطولة الاحترافية">
+            <img src="data:image/png;base64,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" alt="البطولة الاحترافية">
+        </div>
+        <div class="header-actions">
+            <button id="toggleEditBtn" class="hidden" onclick="toggleEditMode()">✏️ تفعيل التعديل</button>
+            <button id="addMatchTopBtn" class="primary hidden" onclick="openMatchModal()">➕ إضافة مباراة</button>
+            <button id="logoutBtn" class="danger hidden" onclick="logoutAdmin()">🚪 خروج</button>
+        </div>
+    </header>
+
+    <!-- 1. تبويب المباريات المباشرة -->
+    <section id="viewMatches" class="panel glass">
+        <div class="panel-head">
+            <div class="panel-head-title">
+                <span class="big-icon">🏟️</span>
+                <span>مباريات الجولة</span>
+            </div>
+            <span class="live-badge-top">● اضغط للمشاهدة</span>
+        </div>
+        <div id="matchesList"></div>
+        <button class="panel-footer-link" onclick="switchView('standings')">شاهد الترتيب الكامل ⬅</button>
+    </section>
+
+    <!-- 2. تبويب جدول الترتيب -->
+    <section id="viewStandings" class="panel glass hidden">
+        <div class="panel-head">
+            <div class="panel-head-title">
+                <span class="big-icon">🏆</span>
+                <span>جدول ترتيب الدوري</span>
+            </div>
+            <span class="live-badge-top">16 فريقاً</span>
+        </div>
+
+        <div class="table-head" id="tableHeader">
+            <span>#</span>
+            <span style="text-align:right">الفريق</span>
+            <span>لعب</span>
+            <span>+/-</span>
+            <span>فارق</span>
+            <span>نقاط</span>
+        </div>
+
+        <div id="teamsContainer"></div>
+
+        <div class="legend">
+            <div class="legend-item"><i class="dot" style="background:var(--accent-caf-cl);color:var(--accent-caf-cl)"></i><span>دوري أبطال إفريقيا (1-2)</span></div>
+            <div class="legend-item"><i class="dot" style="background:var(--accent-caf-cc);color:var(--accent-caf-cc)"></i><span>كأس الكونفدرالية (3)</span></div>
+            <div class="legend-item"><i class="dot" style="background:var(--accent-playoff);color:var(--accent-playoff)"></i><span>تصفيات الهبوط (13-14)</span></div>
+            <div class="legend-item"><i class="dot" style="background:var(--accent-relegation);color:var(--accent-relegation)"></i><span>الهبوط المباشر (15-16)</span></div>
+        </div>
+    </section>
+
+    <!-- 3. تبويب الإحصائيات -->
+    <section id="viewStats" class="panel glass hidden">
+        <div class="panel-head">
+            <div class="panel-head-title">
+                <span class="big-icon">📊</span>
+                <span>إحصائيات البطولة</span>
+            </div>
+            <span class="live-badge-top">تحديث تلقائي</span>
+        </div>
+        <div class="stats-grid" id="statsGrid"></div>
+    </section>
+
+    <!-- 4. صفحة مشاهدة المباراة -->
+    <section id="viewPlayer" class="panel glass hidden">
+        <div class="player-header-box">
+            <button onclick="switchView('matches')">➔ رجوع للمباريات</button>
+        </div>
+
+        <div id="playerMatchHeader"></div>
+
+        <div class="video-wrapper" id="videoContainer">
+            <div class="video-placeholder">
+                <span style="font-size:32px">📺</span>
+                <span>لا يوجد رابط بث مضاف لهذه المباراة حالياً</span>
+            </div>
+        </div>
+
+        <div id="playerStatusMsg" class="player-status-msg"></div>
+
+        <!-- قائمة القنوات في حال كان الرابط ملف قائمة تشغيل .m3u -->
+        <div id="m3uPlaylistBox" class="m3u-playlist-box hidden">
+            <div class="m3u-playlist-title">📡 القنوات المتوفرة في قائمة M3U:</div>
+            <div id="m3uChannelsList" class="m3u-channels-list"></div>
+        </div>
+
+        <!-- التحكم في رابط البث للمدير فقط -->
+        <div id="playerAdminControls" class="video-controls-admin hidden">
+            <label style="font-size:12px;color:#b8d3e9;font-weight:700">
+                رابط البث المباشر (YouTube أو رابط .m3u8 أو قائمة .m3u أو قناة .ts):
+            </label>
+            <div class="video-input-row">
+                <input type="text" id="videoUrlInput" dir="ltr" placeholder="https://... (.m3u8 / .m3u / .ts / youtube)">
+                <button class="primary" onclick="saveMatchVideo()">حفظ وتشغيل</button>
+            </div>
+        </div>
+    </section>
+</div>
+
+<!-- الشريط السفلي العائم المصغّر -->
+<nav class="dock glass">
+    <button id="navMatches" class="active" onclick="switchView('matches')">
+        <span class="nav-icon">🏟️</span>
+        <span>المباريات</span>
+    </button>
+    <button id="navStandings" onclick="switchView('standings')">
+        <span class="nav-icon">🏆</span>
+        <span>الترتيب</span>
+    </button>
+    <button id="navStats" onclick="switchView('stats')">
+        <span class="nav-icon">📊</span>
+        <span>الإحصائيات</span>
+    </button>
+</nav>
+
+<!-- نافذة تسجيل دخول المدير -->
+<div class="modal-backdrop" id="loginModal">
+    <div class="modal">
+        <h3>🔐 تسجيل دخول مدير الصفحة</h3>
+        <div class="error-msg" id="loginError">البريد الإلكتروني أو كلمة المرور غير صحيحة</div>
+        <div class="form-group">
+            <label>البريد الإلكتروني للمدير</label>
+            <input type="email" id="loginEmail" placeholder="admin@botola.ma">
+        </div>
+        <div class="form-group">
+            <label>كلمة المرور</label>
+            <input type="password" id="loginPass" placeholder="••••••">
+        </div>
+        <div class="modal-actions">
+            <button onclick="closeModal('loginModal')">إلغاء</button>
+            <button class="primary" onclick="submitAdminLogin()">دخول</button>
+        </div>
+    </div>
+</div>
+
+<!-- نافذة إعدادات حساب المدير -->
+<div class="modal-backdrop" id="adminSettingsModal">
+    <div class="modal">
+        <h3>⚙️ إعدادات حساب المدير</h3>
+        <div class="form-group">
+            <label>البريد الإلكتروني الجديد</label>
+            <input type="email" id="newAdminEmail">
+        </div>
+        <div class="form-group">
+            <label>كلمة المرور الجديدة</label>
+            <input type="text" id="newAdminPass">
+        </div>
+        <div class="modal-actions">
+            <button onclick="closeModal('adminSettingsModal')">إلغاء</button>
+            <button class="primary" onclick="saveAdminCredentials()">حفظ التغييرات</button>
+        </div>
+    </div>
+</div>
+
+<!-- نافذة تعديل شعار وحالة الفريق -->
+<div class="modal-backdrop" id="teamModal">
+    <div class="modal">
+        <h3 id="modalTeamTitle">تعديل شعار وحالة الفريق</h3>
+        <div class="form-group">
+            <label>رابط صورة الشعار (PNG / SVG / JPG)</label>
+            <input type="text" id="modalLogoUrl" placeholder="https://example.com/logo.png" oninput="previewTeamLogo(this.value)">
+            <div class="logo-preview-box" id="logoPreviewBox">PNG</div>
+        </div>
+        <div class="form-group">
+            <label>لون الشريط الجانبي (التأهل / الهبوط)</label>
+            <select id="modalTeamStatus">
+                <option value="caf-cl">أصفر - دوري أبطال إفريقيا (1-2)</option>
+                <option value="caf-cc">أخضر - كأس الكونفدرالية (3)</option>
+                <option value="none">بدون شريط ملون</option>
+                <option value="playoff">برتقالي - تصفيات الهبوط (13-14)</option>
+                <option value="relegation">أحمر - الهبوط المباشر (15-16)</option>
+            </select>
+        </div>
+        <div class="modal-actions">
+            <button onclick="closeModal('teamModal')">إلغاء</button>
+            <button class="primary" onclick="saveTeamModal()">حفظ</button>
+        </div>
+    </div>
+</div>
+
+<!-- نافذة إضافة / تعديل مباراة -->
+<div class="modal-backdrop" id="matchModal">
+    <div class="modal">
+        <h3 id="matchModalTitle">إضافة / تعديل مباراة</h3>
+        <div class="form-row-2">
+            <div class="form-group">
+                <label>الفريق المستضيف</label>
+                <select id="mHomeIdx"></select>
+            </div>
+            <div class="form-group">
+                <label>الفريق الضيف</label>
+                <select id="mAwayIdx"></select>
+            </div>
+        </div>
+        <div class="form-row-2">
+            <div class="form-group">
+                <label>أهداف المستضيف</label>
+                <input type="number" id="mHomeScore" min="0" value="0">
+            </div>
+            <div class="form-group">
+                <label>أهداف الضيف</label>
+                <input type="number" id="mAwayScore" min="0" value="0">
+            </div>
+        </div>
+        <div class="form-row-2">
+            <div class="form-group">
+                <label>حالة المباراة والعداد</label>
+                <select id="mState">
+                    <option value="upcoming">لم تبدأ (توقيت)</option>
+                    <option value="1H">الشوط الأول (0' ➔ 45')</option>
+                    <option value="HT">استراحة ما بين الشوطين (شوط)</option>
+                    <option value="2H">الشوط الثاني (45' ➔ 90')</option>
+                    <option value="FT">انتهت المباراة (انتهى + احتساب النقاط)</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>الدقيقة الحالية أو التوقيت</label>
+                <input type="text" id="mMinuteOrTime" placeholder="مثال: 0 أو 20:00">
+            </div>
+        </div>
+        <div class="form-group">
+            <label>رابط البث المباشر (YouTube / .m3u8 / .m3u / .ts)</label>
+            <input type="text" id="mVideoUrl" dir="ltr" placeholder="https://... (.m3u8 / .m3u / .ts / youtube)">
+        </div>
+        <div class="modal-actions">
+            <button onclick="closeModal('matchModal')">إلغاء</button>
+            <button class="success" onclick="saveMatchModal()">💾 حفظ وتشغيل</button>
+        </div>
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+    import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyDysuriqOAODOOBouZqxXMYvh0kNkLqzP4",
+        authDomain: "credit-app-e947f.firebaseapp.com",
+        projectId: "credit-app-e947f",
+        storageBucket: "credit-app-e947f.firebasestorage.app",
+        messagingSenderId: "234194204765",
+        appId: "1:234194204765:web:7bc3c60c2d86d2e6c335b4"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    const stateDocRef = doc(db, "botola_pro", "main_state");
+
+    const KEYS = {
+        TEAMS: 'botola_glass_teams_v5',
+        MATCHES: 'botola_glass_matches_v5'
+    };
+
+    const defaultTeams = [
+        { name: "الكوكب المراكشي", played: 7, gf: 10, ga: 6, points: 16, status: "caf-cl", color: "#991b1b", short: "KACM", logo: "" },
+        { name: "النادي المكناسي", played: 7, gf: 10, ga: 4, points: 14, status: "caf-cl", color: "#dc2626", short: "CODM", logo: "" },
+        { name: "الرجاء البيضاوي", played: 7, gf: 7, ga: 5, points: 12, status: "caf-cc", color: "#15803d", short: "RCA", logo: "" },
+        { name: "الوداد الرياضي", played: 7, gf: 9, ga: 3, points: 11, status: "none", color: "#b91c1c", short: "WAC", logo: "" },
+        { name: "الجيش الملكي", played: 6, gf: 9, ga: 5, points: 11, status: "none", color: "#166534", short: "FAR", logo: "" },
+        { name: "المغرب الفاسي", played: 7, gf: 6, ga: 5, points: 11, status: "none", color: "#ca8a04", short: "MAS", logo: "" },
+        { name: "اتحاد طنجة", played: 7, gf: 8, ga: 9, points: 10, status: "none", color: "#1d4ed8", short: "IRT", logo: "" },
+        { name: "حسنية أكادير", played: 7, gf: 14, ga: 12, points: 9, status: "none", color: "#dc2626", short: "HUSA", logo: "" },
+        { name: "الفتح الرباطي", played: 7, gf: 4, ga: 5, points: 8, status: "none", color: "#9f1239", short: "FUS", logo: "" },
+        { name: "الدفاع الحسني الجديدي", played: 7, gf: 14, ga: 16, points: 8, status: "none", color: "#15803d", short: "DHJ", logo: "" },
+        { name: "اتحاد تواركة", played: 7, gf: 4, ga: 6, points: 8, status: "none", color: "#eab308", short: "UTS", logo: "" },
+        { name: "نهضة بركان", played: 6, gf: 6, ga: 4, points: 8, status: "none", color: "#ea580c", short: "RSB", logo: "" },
+        { name: "إتحاد أمل تيزنيت", played: 7, gf: 8, ga: 12, points: 7, status: "playoff", color: "#2563eb", short: "USAT", logo: "" },
+        { name: "الوداد الرياضي تمارة", played: 7, gf: 5, ga: 7, points: 6, status: "playoff", color: "#1e40af", short: "WST", logo: "" },
+        { name: "المغرب التطواني", played: 7, gf: 2, ga: 10, points: 3, status: "relegation", color: "#dc2626", short: "MAT", logo: "" },
+        { name: "نهضة الزمامرة", played: 7, gf: 6, ga: 13, points: 2, status: "relegation", color: "#0284c7", short: "RCAZ", logo: "" }
+    ];
+
+    const defaultMatches = [
+        {
+            id: 101,
+            homeName: "الرجاء البيضاوي",
+            awayName: "الوداد الرياضي",
+            homeScore: 1,
+            awayScore: 1,
+            state: "1H",
+            minute: 20,
+            kickoffTime: "20:00",
+            videoUrl: "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8",
+            counted: false,
+            countedHomeGoals: 0,
+            countedAwayGoals: 0,
+            countedResult: null
+        },
+        {
+            id: 102,
+            homeName: "الجيش الملكي",
+            awayName: "نهضة بركان",
+            homeScore: 2,
+            awayScore: 0,
+            state: "HT",
+            minute: 45,
+            kickoffTime: "22:00",
+            videoUrl: "",
+            counted: false,
+            countedHomeGoals: 0,
+            countedAwayGoals: 0,
+            countedResult: null
+        }
+    ];
+
+    let teams = JSON.parse(localStorage.getItem(KEYS.TEAMS)) || JSON.parse(JSON.stringify(defaultTeams));
+    let matches = JSON.parse(localStorage.getItem(KEYS.MATCHES)) || JSON.parse(JSON.stringify(defaultMatches));
+    let isAdmin = false;
+    let isEditMode = false;
+    let currentView = 'matches';
+    let currentPlayerMatchId = null;
+    let editingTeamIndex = null;
+    let editingMatchId = null;
+    let hasCloudData = false;
+
+    let activeHls = null;
+    let activeMpegts = null;
+
+    /* عداد الضغط 3 مرات متتالية على شعار البطولة لفتح واجهة دخول المدير */
+    let logoTapCount = 0;
+    let logoTapTimer = null;
+
+    window.handleLogoSecretTap = function() {
+        logoTapCount++;
+        clearTimeout(logoTapTimer);
+        if (logoTapCount >= 3) {
+            logoTapCount = 0;
+            if (!isAdmin) {
+                openLoginModal();
+            }
+            return;
+        }
+        logoTapTimer = setTimeout(() => {
+            logoTapCount = 0;
+        }, 900);
+    };
+
+    /* حفظ محلي + رفع فوري إلى Firebase Firestore ليظهر لجميع الزوار */
+    async function saveAll(pushToCloud = true) {
+        localStorage.setItem(KEYS.TEAMS, JSON.stringify(teams));
+        localStorage.setItem(KEYS.MATCHES, JSON.stringify(matches));
+
+        if (pushToCloud && auth.currentUser) {
+            try {
+                await setDoc(stateDocRef, {
+                    teams: JSON.parse(JSON.stringify(teams)),
+                    matches: JSON.parse(JSON.stringify(matches)),
+                    updatedAt: Date.now()
+                }, { merge: true });
+            } catch (err) {
+                console.error("Firestore save error:", err);
+                alert("تعذر مزامنة التعديل أونلاين: " + err.message);
+            }
+        }
+    }
+
+    /* الاستماع للتحديثات الحية من Firebase Firestore لجميع الزوار */
+    onSnapshot(stateDocRef, (docSnap) => {
+        if (docSnap.exists()) {
+            const data = docSnap.data();
+            hasCloudData = true;
+            if (Array.isArray(data.teams)) {
+                teams = data.teams;
+                localStorage.setItem(KEYS.TEAMS, JSON.stringify(teams));
+            }
+            if (Array.isArray(data.matches)) {
+                matches = data.matches;
+                localStorage.setItem(KEYS.MATCHES, JSON.stringify(matches));
+            }
+            renderAll();
+            if (currentView === 'player' && currentPlayerMatchId) {
+                renderPlayerHeader();
+                const m = matches.find(x => x.id === currentPlayerMatchId);
+                if (m && !isAdmin) {
+                    const currentInput = document.getElementById('videoUrlInput').value;
+                    if ((m.videoUrl || '') !== currentInput) {
+                        document.getElementById('videoUrlInput').value = m.videoUrl || '';
+                        playStreamUrl(m.videoUrl || '');
+                    }
+                }
+            }
+        } else if (auth.currentUser && !hasCloudData) {
+            saveAll(true);
+        }
+    }, (error) => {
+        console.warn("Firestore snapshot listener:", error.message);
+    });
+
+    /* مراقبة حالة تسجيل الدخول عبر Firebase Authentication */
+    onAuthStateChanged(auth, (user) => {
+        isAdmin = !!user;
+        if (user && !hasCloudData) {
+            saveAll(true);
+        }
+        updateAdminUI();
+    });
+
+    function getTeamByName(name) {
+        return teams.find(t => t.name === name) || { name, color: '#334155', short: name.slice(0, 3), logo: '' };
+    }
+
+    function getAutoStatus(index, total) {
+        if (index === 0 || index === 1) return "caf-cl";
+        if (index === 2) return "caf-cc";
+        if (index === total - 4 || index === total - 3) return "playoff";
+        if (index >= total - 2) return "relegation";
+        return "none";
+    }
+
+    function renderCrest(team) {
+        if (team.logo) {
+            return `<div class="crest"><img src="${team.logo}" alt="${team.name}" onerror="this.parentElement.style.background='${team.color || '#334155'}'; this.parentElement.innerHTML='${team.short || '⚽'}'"></div>`;
+        }
+        return `<div class="crest" style="background:${team.color || '#334155'}">${team.short || team.name.slice(0, 3)}</div>`;
+    }
+
+    /* إدارة صلاحيات المدير والزوار */
+    function updateAdminUI() {
+        document.getElementById('toggleEditBtn').classList.toggle('hidden', !isAdmin);
+        document.getElementById('addMatchTopBtn').classList.toggle('hidden', !isAdmin);
+        document.getElementById('logoutBtn').classList.toggle('hidden', !isAdmin);
+        document.getElementById('playerAdminControls').classList.toggle('hidden', !isAdmin);
+
+        if (!isAdmin && isEditMode) {
+            isEditMode = false;
+        }
+        renderAll();
+    }
+
+    window.openLoginModal = function() {
+        document.getElementById('loginError').style.display = 'none';
+        document.getElementById('loginEmail').value = '';
+        document.getElementById('loginPass').value = '';
+        document.getElementById('loginModal').classList.add('open');
+    };
+
+    window.submitAdminLogin = async function() {
+        const email = document.getElementById('loginEmail').value.trim();
+        const pass = document.getElementById('loginPass').value;
+        const errEl = document.getElementById('loginError');
+        errEl.style.display = 'none';
+
+        if (!email || !pass) {
+            errEl.textContent = 'يرجى إدخال البريد الإلكتروني وكلمة المرور';
+            errEl.style.display = 'block';
+            return;
+        }
+
+        try {
+            await signInWithEmailAndPassword(auth, email, pass);
+            closeModal('loginModal');
+        } catch (err) {
+            errEl.textContent = 'البريد الإلكتروني أو كلمة المرور غير صحيحة';
+            errEl.style.display = 'block';
+        }
+    };
+
+    window.logoutAdmin = async function() {
+        try {
+            await signOut(auth);
+            isEditMode = false;
+        } catch (err) {
+            console.error(err);
+        }
+    };
+
+    /* التنقل بين الصفحات */
+    window.switchView = function(view) {
+        currentView = view;
+        document.getElementById('viewMatches').classList.toggle('hidden', view !== 'matches');
+        document.getElementById('viewStandings').classList.toggle('hidden', view !== 'standings');
+        document.getElementById('viewStats').classList.toggle('hidden', view !== 'stats');
+        document.getElementById('viewPlayer').classList.toggle('hidden', view !== 'player');
+
+        document.getElementById('navMatches').classList.toggle('active', view === 'matches' || view === 'player');
+        document.getElementById('navStandings').classList.toggle('active', view === 'standings');
+        document.getElementById('navStats').classList.toggle('active', view === 'stats');
+
+        if (view !== 'player') {
+            destroyStreamPlayers();
+        }
+
+        if (view === 'standings') renderStandings();
+        if (view === 'stats') renderStats();
+        if (view === 'matches') renderMatches();
+    };
+
+    /* احتساب النقاط وتحديث الترتيب تلقائياً عند انتهاء المباراة */
+    function applyMatchToStandings(match) {
+        const home = teams.find(t => t.name === match.homeName);
+        const away = teams.find(t => t.name === match.awayName);
+        if (!home || !away || home === away) return;
+
+        if (match.counted) {
+            home.played = Math.max(0, home.played - 1);
+            away.played = Math.max(0, away.played - 1);
+            home.gf -= match.countedHomeGoals;
+            home.ga -= match.countedAwayGoals;
+            away.gf -= match.countedAwayGoals;
+            away.ga -= match.countedHomeGoals;
+            if (match.countedResult === 'H') home.points -= 3;
+            else if (match.countedResult === 'A') away.points -= 3;
+            else if (match.countedResult === 'D') { home.points -= 1; away.points -= 1; }
+        }
+
+        const hg = Number(match.homeScore) || 0;
+        const ag = Number(match.awayScore) || 0;
+
+        home.played += 1;
+        away.played += 1;
+        home.gf += hg;
+        home.ga += ag;
+        away.gf += ag;
+        away.ga += hg;
+
+        if (hg > ag) {
+            home.points += 3;
+            match.countedResult = 'H';
+        } else if (ag > hg) {
+            away.points += 3;
+            match.countedResult = 'A';
+        } else {
+            home.points += 1;
+            away.points += 1;
+            match.countedResult = 'D';
+        }
+
+        match.counted = true;
+        match.countedHomeGoals = hg;
+        match.countedAwayGoals = ag;
+
+        sortStandings(false);
+        saveAll(true);
+    }
+
+    function revertMatchFromStandings(match) {
+        if (!match.counted) return;
+        const home = teams.find(t => t.name === match.homeName);
+        const away = teams.find(t => t.name === match.awayName);
+        if (home && away) {
+            home.played = Math.max(0, home.played - 1);
+            away.played = Math.max(0, away.played - 1);
+            home.gf -= match.countedHomeGoals;
+            home.ga -= match.countedAwayGoals;
+            away.gf -= match.countedAwayGoals;
+            away.ga -= match.countedHomeGoals;
+            if (match.countedResult === 'H') home.points -= 3;
+            else if (match.countedResult === 'A') away.points -= 3;
+            else if (match.countedResult === 'D') { home.points -= 1; away.points -= 1; }
+        }
+        match.counted = false;
+        match.countedResult = null;
+    }
+
+    /* العداد التلقائي للأشواط */
+    setInterval(() => {
+        let changed = false;
+        matches.forEach(m => {
+            if (m.state === '1H') {
+                m.minute = (Number(m.minute) || 0) + 1;
+                if (m.minute >= 45) {
+                    m.minute = 45;
+                    m.state = 'HT';
+                }
+                changed = true;
+            } else if (m.state === '2H') {
+                m.minute = (Number(m.minute) || 45) + 1;
+                if (m.minute >= 90) {
+                    m.minute = 90;
+                    m.state = 'FT';
+                    applyMatchToStandings(m);
+                }
+                changed = true;
+            }
+        });
+
+        if (changed) {
+            saveAll(isAdmin);
+            if (currentView === 'matches') renderMatches();
+            if (currentView === 'standings') renderStandings();
+            if (currentView === 'player' && currentPlayerMatchId) renderPlayerHeader();
+        }
+    }, 60000);
+
+    /* عرض قائمة المباريات */
+    function getMatchStatusBadge(m) {
+        if (m.state === '1H' || m.state === '2H') {
+            return `<span class="match-time-status status-live">'${m.minute}</span>`;
+        }
+        if (m.state === 'HT') {
+            return `<span class="match-time-status status-ht">شوط</span>`;
+        }
+        if (m.state === 'FT') {
+            return `<span class="match-time-status status-ft">انتهى</span>`;
+        }
+        return `<span class="match-time-status status-upcoming">${m.kickoffTime || '20:00'}</span>`;
+    }
+
+    window.renderMatches = function() {
+        const list = document.getElementById('matchesList');
+        list.innerHTML = '';
+
+        if (matches.length === 0) {
+            list.innerHTML = `<div style="padding:24px;text-align:center;color:#a9cce8;font-size:13px">لا توجد مباريات مضافة حالياً</div>`;
+            return;
+        }
+
+        matches.forEach(m => {
+            const home = getTeamByName(m.homeName);
+            const away = getTeamByName(m.awayName);
+            const scoreText = m.state === 'upcoming' ? '- : -' : `${m.homeScore} - ${m.awayScore}`;
+
+            const wrapper = document.createElement('div');
+            wrapper.innerHTML = `
+                <div class="match-row" onclick="openMatchPlayer(${m.id})">
+                    <div class="match-team home">
+                        ${renderCrest(home)}
+                        <span class="match-team-name">${home.name}</span>
+                    </div>
+                    <div class="match-center">
+                        ${getMatchStatusBadge(m)}
+                        <div class="match-score">${scoreText}</div>
+                    </div>
+                    <div class="match-team away">
+                        <span class="match-team-name">${away.name}</span>
+                        ${renderCrest(away)}
+                    </div>
+                </div>
+                ${isAdmin && isEditMode ? `
+                <div class="match-admin-strip">
+                    <button class="success" onclick="quickStartHalf(${m.id}, '1H')">▶ ش1 (0')</button>
+                    <button onclick="quickStartHalf(${m.id}, 'HT')">⏸ شوط</button>
+                    <button class="primary" onclick="quickStartHalf(${m.id}, '2H')">▶ ش2 (45')</button>
+                    <button class="danger" onclick="quickFinishMatch(${m.id})">🏁 انتهى (+نقاط)</button>
+                    <button onclick="openMatchModal(${m.id})">✏️ تعديل</button>
+                    <button class="danger" onclick="deleteMatch(${m.id})">🗑</button>
+                </div>` : ''}
+            `;
+            list.appendChild(wrapper);
+        });
+    };
+
+    window.quickStartHalf = function(id, halfState) {
+        const m = matches.find(x => x.id === id);
+        if (!m) return;
+        if (m.counted) revertMatchFromStandings(m);
+        m.state = halfState;
+        m.minute = halfState === '1H' ? 0 : 45;
+        saveAll(true);
+        renderMatches();
+    };
+
+    window.quickFinishMatch = function(id) {
+        const m = matches.find(x => x.id === id);
+        if (!m) return;
+        m.state = 'FT';
+        m.minute = 90;
+        applyMatchToStandings(m);
+        renderMatches();
+        renderStandings();
+    };
+
+    window.deleteMatch = function(id) {
+        const idx = matches.findIndex(x => x.id === id);
+        if (idx === -1) return;
+        if (confirm('هل تريد حذف هذه المباراة؟')) {
+            revertMatchFromStandings(matches[idx]);
+            matches.splice(idx, 1);
+            saveAll(true);
+            renderMatches();
+            renderStandings();
+        }
+    };
+
+    /* =========================================================================
+       مشغل الفيديو الشامل (YouTube + HLS .m3u8 + قوائم .m3u + بث .ts)
+       ========================================================================= */
+    function detectStreamType(rawUrl) {
+        const url = (rawUrl || '').trim();
+        const lower = url.toLowerCase();
+
+        const ytReg = /(?:youtube\.com\/(?:watch\?v=|embed\/|v\/|shorts\/|live\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
+        const ytMatch = url.match(ytReg);
+        if (ytMatch) {
+            return { type: 'youtube', id: ytMatch[1] };
+        }
+        if (/^[a-zA-Z0-9_-]{11}$/.test(url)) {
+            return { type: 'youtube', id: url };
+        }
+        if (lower.includes('.m3u8')) {
+            return { type: 'hls', url };
+        }
+        if (lower.endsWith('.m3u') || lower.includes('.m3u?')) {
+            return { type: 'm3u_playlist', url };
+        }
+        if (lower.includes('.ts') || lower.includes('mpegts') || /:\d+\/live\//.test(lower)) {
+            return { type: 'ts', url };
+        }
+        if (lower.includes('.mp4') || lower.includes('.webm')) {
+            return { type: 'native_video', url };
+        }
+        return { type: 'hls_or_auto', url };
+    }
+
+    function destroyStreamPlayers() {
+        if (activeHls) {
+            try { activeHls.destroy(); } catch (e) {}
+            activeHls = null;
+        }
+        if (activeMpegts) {
+            try { activeMpegts.pause(); activeMpegts.unload(); activeMpegts.detachMediaElement(); activeMpegts.destroy(); } catch (e) {}
+            activeMpegts = null;
+        }
+    }
+
+    function setPlayerStatus(msg, isInfo = false) {
+        const el = document.getElementById('playerStatusMsg');
+        if (!msg) {
+            el.style.display = 'none';
+            el.textContent = '';
+            return;
+        }
+        el.textContent = msg;
+        el.className = isInfo ? 'player-status-msg info' : 'player-status-msg';
+        el.style.display = 'block';
+    }
+
+    window.openMatchPlayer = function(id) {
+        currentPlayerMatchId = id;
+        switchView('player');
+        renderPlayerHeader();
+
+        const m = matches.find(x => x.id === id);
+        const url = m ? (m.videoUrl || '').trim() : '';
+        document.getElementById('videoUrlInput').value = url;
+        playStreamUrl(url);
+    };
+
+    function renderPlayerHeader() {
+        const m = matches.find(x => x.id === currentPlayerMatchId);
+        if (!m) return;
+        const home = getTeamByName(m.homeName);
+        const away = getTeamByName(m.awayName);
+        const scoreText = m.state === 'upcoming' ? '- : -' : `${m.homeScore} - ${m.awayScore}`;
+
+        document.getElementById('playerMatchHeader').innerHTML = `
+            <div class="match-row" style="cursor:default;background:rgba(6,29,53,0.45)">
+                <div class="match-team home">
+                    ${renderCrest(home)}
+                    <span class="match-team-name">${home.name}</span>
+                </div>
+                <div class="match-center">
+                    ${getMatchStatusBadge(m)}
+                    <div class="match-score">${scoreText}</div>
+                </div>
+                <div class="match-team away">
+                    <span class="match-team-name">${away.name}</span>
+                    ${renderCrest(away)}
+                </div>
+            </div>
+        `;
+    }
+
+    async function playStreamUrl(rawUrl) {
+        destroyStreamPlayers();
+        setPlayerStatus('');
+        const container = document.getElementById('videoContainer');
+        const playlistBox = document.getElementById('m3uPlaylistBox');
+        playlistBox.classList.add('hidden');
+
+        const url = (rawUrl || '').trim();
+        if (!url) {
+            container.innerHTML = `
+                <div class="video-placeholder">
+                    <span style="font-size:32px">📺</span>
+                    <span>لا يوجد رابط بث مضاف لهذه المباراة حالياً</span>
+                </div>`;
+            return;
+        }
+
+        const info = detectStreamType(url);
+
+        if (info.type === 'youtube') {
+            container.innerHTML = `
+                <iframe
+                    src="https://www.youtube.com/embed/${info.id}?autoplay=1&mute=1&rel=0&modestbranding=1&playsinline=1"
+                    title="مشغل يوتيوب"
+                    referrerpolicy="strict-origin-when-cross-origin"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    allowfullscreen>
+                </iframe>`;
+            return;
+        }
+
+        if (info.type === 'm3u_playlist') {
+            setPlayerStatus('جاري قراءة قائمة القنوات M3U...', true);
+            try {
+                const res = await fetch(url);
+                const text = await res.text();
+                const channels = parseM3UContent(text);
+                if (channels.length > 0) {
+                    renderM3uChannelList(channels);
+                    setPlayerStatus(`تم العثور على ${channels.length} قناة في القائمة`, true);
+                    playDirectMediaStream(channels[0].url);
+                    return;
+                }
+            } catch (err) {
+                setPlayerStatus('تعذر قراءة ملف M3U من المصدر، جاري محاولة التشغيل المباشر...');
+            }
+        }
+
+        playDirectMediaStream(url, info.type);
+    }
+
+    function parseM3UContent(m3uText) {
+        const lines = m3uText.split(/\r?\n/);
+        const channels = [];
+        let currentTitle = '';
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i].trim();
+            if (!line) continue;
+            if (line.startsWith('#EXTINF:')) {
+                const commaIdx = line.lastIndexOf(',');
+                currentTitle = commaIdx !== -1 ? line.slice(commaIdx + 1).trim() : `قناة ${channels.length + 1}`;
+            } else if (!line.startsWith('#')) {
+                channels.push({
+                    title: currentTitle || `قناة ${channels.length + 1}`,
+                    url: line
+                });
+                currentTitle = '';
+            }
+        }
+        return channels;
+    }
+
+    function renderM3uChannelList(channels) {
+        const box = document.getElementById('m3uPlaylistBox');
+        const list = document.getElementById('m3uChannelsList');
+        box.classList.remove('hidden');
+        list.innerHTML = '';
+
+        channels.forEach((ch, idx) => {
+            const btn = document.createElement('button');
+            btn.className = `m3u-ch-btn ${idx === 0 ? 'active' : ''}`;
+            btn.textContent = ch.title;
+            btn.onclick = () => {
+                document.querySelectorAll('.m3u-ch-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                playDirectMediaStream(ch.url);
+            };
+            list.appendChild(btn);
+        });
+    }
+
+    function playDirectMediaStream(streamUrl, forcedType) {
+        destroyStreamPlayers();
+        const container = document.getElementById('videoContainer');
+        container.innerHTML = `<video id="liveVideoEl" controls autoplay playsinline></video>`;
+        const videoEl = document.getElementById('liveVideoEl');
+        const type = forcedType || detectStreamType(streamUrl).type;
+
+        if (type === 'ts') {
+            if (window.mpegts && mpegts.getFeatureList().mseLivePlayback) {
+                activeMpegts = mpegts.createPlayer({
+                    type: 'mpegts',
+                    isLive: true,
+                    url: streamUrl
+                }, {
+                    enableStashBuffer: false,
+                    liveBufferLatencyChasing: true
+                });
+                activeMpegts.attachMediaElement(videoEl);
+                activeMpegts.load();
+                activeMpegts.play().catch(() => {});
+                activeMpegts.on(mpegts.Events.ERROR, () => {
+                    setPlayerStatus('تعذر تشغيل بث TS داخل المتصفح (قد يكون الرابط متوقفاً أو محمياً).');
+                });
+            } else {
+                videoEl.src = streamUrl;
+            }
+            return;
+        }
+
+        if (type === 'native_video') {
+            videoEl.src = streamUrl;
+            videoEl.play().catch(() => {});
+            return;
+        }
+
+        if (window.Hls && Hls.isSupported()) {
+            activeHls = new Hls({
+                enableWorker: true,
+                lowLatencyMode: true,
+                backBufferLength: 60
+            });
+            activeHls.loadSource(streamUrl);
+            activeHls.attachMedia(videoEl);
+            activeHls.on(Hls.Events.MANIFEST_PARSED, () => {
+                setPlayerStatus('');
+                videoEl.play().catch(() => {});
+            });
+            activeHls.on(Hls.Events.ERROR, (event, data) => {
+                if (data.fatal) {
+                    if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
+                        setPlayerStatus('انقطع الاتصال بالسيرفر، جاري إعادة المحاولة...');
+                        activeHls.startLoad();
+                    } else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
+                        activeHls.recoverMediaError();
+                    } else {
+                        destroyStreamPlayers();
+                        setPlayerStatus('تعذر تشغيل هذا الرابط داخل المتصفح.');
+                    }
+                }
+            });
+        } else if (videoEl.canPlayType('application/vnd.apple.mpegurl')) {
+            videoEl.src = streamUrl;
+            videoEl.addEventListener('loadedmetadata', () => videoEl.play().catch(() => {}));
+        } else {
+            videoEl.src = streamUrl;
+        }
+    }
+
+    window.saveMatchVideo = function() {
+        const m = matches.find(x => x.id === currentPlayerMatchId);
+        if (!m) return;
+        const raw = document.getElementById('videoUrlInput').value.trim();
+        m.videoUrl = raw;
+        saveAll(true);
+        renderMatches();
+        playStreamUrl(raw);
+    };
+
+    /* نافذة إضافة / تعديل مباراة */
+    window.openMatchModal = function(id = null) {
+        editingMatchId = id;
+        const homeSel = document.getElementById('mHomeIdx');
+        const awaySel = document.getElementById('mAwayIdx');
+        homeSel.innerHTML = '';
+        awaySel.innerHTML = '';
+
+        teams.forEach((t, i) => {
+            homeSel.innerHTML += `<option value="${i}">${t.name}</option>`;
+            awaySel.innerHTML += `<option value="${i}">${t.name}</option>`;
+        });
+
+        if (id) {
+            const m = matches.find(x => x.id === id);
+            document.getElementById('matchModalTitle').textContent = 'تعديل المباراة';
+            const hIdx = Math.max(0, teams.findIndex(t => t.name === m.homeName));
+            const aIdx = Math.max(0, teams.findIndex(t => t.name === m.awayName));
+            homeSel.value = hIdx;
+            awaySel.value = aIdx;
+            document.getElementById('mHomeScore').value = m.homeScore;
+            document.getElementById('mAwayScore').value = m.awayScore;
+            document.getElementById('mState').value = m.state;
+            document.getElementById('mMinuteOrTime').value = m.state === 'upcoming' ? (m.kickoffTime || '20:00') : m.minute;
+            document.getElementById('mVideoUrl').value = m.videoUrl || '';
+        } else {
+            document.getElementById('matchModalTitle').textContent = 'إضافة مباراة جديدة';
+            homeSel.value = 0;
+            awaySel.value = teams.length > 1 ? 1 : 0;
+            document.getElementById('mHomeScore').value = 0;
+            document.getElementById('mAwayScore').value = 0;
+            document.getElementById('mState').value = '1H';
+            document.getElementById('mMinuteOrTime').value = '0';
+            document.getElementById('mVideoUrl').value = '';
+        }
+
+        document.getElementById('matchModal').classList.add('open');
+    };
+
+    window.saveMatchModal = function() {
+        const hIdx = Number(document.getElementById('mHomeIdx').value);
+        const aIdx = Number(document.getElementById('mAwayIdx').value);
+        if (hIdx === aIdx) {
+            alert('يرجى اختيار فريقين مختلفين.');
+            return;
+        }
+
+        const homeName = teams[hIdx].name;
+        const awayName = teams[aIdx].name;
+        const homeScore = Number(document.getElementById('mHomeScore').value) || 0;
+        const awayScore = Number(document.getElementById('mAwayScore').value) || 0;
+        const state = document.getElementById('mState').value;
+        const minOrTime = document.getElementById('mMinuteOrTime').value.trim();
+        const videoUrl = document.getElementById('mVideoUrl').value.trim();
+
+        let minute = 0;
+        let kickoffTime = '20:00';
+        if (state === 'upcoming') {
+            kickoffTime = minOrTime || '20:00';
+        } else if (state === '1H') {
+            minute = Math.min(44, Math.max(0, parseInt(minOrTime, 10) || 0));
+        } else if (state === 'HT') {
+            minute = 45;
+        } else if (state === '2H') {
+            minute = Math.min(89, Math.max(45, parseInt(minOrTime, 10) || 45));
+        } else if (state === 'FT') {
+            minute = 90;
+        }
+
+        if (editingMatchId) {
+            const m = matches.find(x => x.id === editingMatchId);
+            if (m) {
+                if (state !== 'FT' && m.counted) revertMatchFromStandings(m);
+                Object.assign(m, { homeName, awayName, homeScore, awayScore, state, minute, kickoffTime, videoUrl });
+                if (state === 'FT') applyMatchToStandings(m);
+            }
+        } else {
+            const newMatch = {
+                id: Date.now(),
+                homeName,
+                awayName,
+                homeScore,
+                awayScore,
+                state,
+                minute,
+                kickoffTime,
+                videoUrl,
+                counted: false,
+                countedHomeGoals: 0,
+                countedAwayGoals: 0,
+                countedResult: null
+            };
+            matches.unshift(newMatch);
+            if (state === 'FT') applyMatchToStandings(newMatch);
+        }
+
+        saveAll(true);
+        closeModal('matchModal');
+        renderMatches();
+        renderStandings();
+    };
+
+    /* جدول الترتيب */
+    window.renderStandings = function() {
+        const container = document.getElementById('teamsContainer');
+        const header = document.getElementById('tableHeader');
+
+        const canEdit = isAdmin && isEditMode;
+        header.className = canEdit ? 'table-head edit-mode' : 'table-head';
+
+        if (canEdit && header.children.length === 6) {
+            const delCol = document.createElement('span');
+            delCol.textContent = '';
+            header.appendChild(delCol);
+        } else if (!canEdit && header.children.length === 7) {
+            header.removeChild(header.lastElementChild);
+        }
+
+        container.innerHTML = '';
+
+        teams.forEach((team, idx) => {
+            const diff = team.gf - team.ga;
+            const diffStr = diff > 0 ? `+${diff}` : `${diff}`;
+            const row = document.createElement('div');
+            row.className = `team-row status-${team.status} ${canEdit ? 'edit-mode' : ''}`;
+
+            row.innerHTML = `
+                <b>${idx + 1}</b>
+                <div class="teamname">
+                    <div onclick="${canEdit ? `openTeamModal(${idx})` : ''}" style="cursor:${canEdit ? 'pointer' : 'default'}" title="${canEdit ? 'تعديل الشعار ولون المركز' : ''}">
+                        ${renderCrest(team)}
+                    </div>
+                    <span class="team-label ${canEdit ? 'editable-field' : ''}" contenteditable="${canEdit}" onblur="updateTeamField(${idx}, 'name', this.textContent)">${team.name}</span>
+                </div>
+                <span class="stat-num ${canEdit ? 'editable-field' : ''}" contenteditable="${canEdit}" onblur="updateTeamField(${idx}, 'played', this.textContent)">${team.played}</span>
+                <span class="stat-num ${canEdit ? 'editable-field' : ''}" contenteditable="${canEdit}" onblur="updateTeamGoals(${idx}, this.textContent)">${team.ga}:${team.gf}</span>
+                <span class="stat-num">${diffStr}</span>
+                <span class="stat-num pts ${canEdit ? 'editable-field' : ''}" contenteditable="${canEdit}" onblur="updateTeamField(${idx}, 'points', this.textContent)">${team.points}</span>
+                ${canEdit ? `<button class="danger" style="padding:3px 6px;font-size:11px" onclick="deleteTeam(${idx})">✕</button>` : ''}
+            `;
+            container.appendChild(row);
+        });
+    };
+
+    window.toggleEditMode = function() {
+        if (!isAdmin) return;
+        isEditMode = !isEditMode;
+        const btn = document.getElementById('toggleEditBtn');
+        btn.textContent = isEditMode ? '✅ إنهاء التعديل' : '✏️ تفعيل التعديل';
+        btn.classList.toggle('success', isEditMode);
+        if (!isEditMode) {
+            sortStandings(true);
+        }
+        renderStandings();
+        renderMatches();
+    };
+
+    window.updateTeamField = function(index, field, val) {
+        const clean = val.trim();
+        if (field === 'name') {
+            if (clean) {
+                const oldName = teams[index].name;
+                teams[index].name = clean;
+                matches.forEach(m => {
+                    if (m.homeName === oldName) m.homeName = clean;
+                    if (m.awayName === oldName) m.awayName = clean;
+                });
+            }
+        } else {
+            const num = parseInt(clean, 10);
+            if (!isNaN(num)) teams[index][field] = num;
+        }
+        saveAll(true);
+        renderStandings();
+        renderMatches();
+    };
+
+    window.updateTeamGoals = function(index, val) {
+        const parts = val.trim().split(':');
+        if (parts.length === 2) {
+            const ga = parseInt(parts[0], 10);
+            const gf = parseInt(parts[1], 10);
+            if (!isNaN(ga) && !isNaN(gf)) {
+                teams[index].ga = ga;
+                teams[index].gf = gf;
+            }
+        }
+        saveAll(true);
+        renderStandings();
+    };
+
+    function sortStandings(shouldSave = true) {
+        teams.sort((a, b) => {
+            if (b.points !== a.points) return b.points - a.points;
+            const diffA = a.gf - a.ga;
+            const diffB = b.gf - b.ga;
+            if (diffB !== diffA) return diffB - diffA;
+            return b.gf - a.gf;
+        });
+
+        teams.forEach((t, i) => {
+            t.status = getAutoStatus(i, teams.length);
+        });
+
+        if (shouldSave) {
+            saveAll(true);
+            renderStandings();
+        }
+    }
+
+    window.deleteTeam = function(index) {
+        if (confirm(`حذف "${teams[index].name}" من الجدول؟`)) {
+            teams.splice(index, 1);
+            saveAll(true);
+            renderStandings();
+        }
+    };
+
+    /* نافذة الشعار وحالة الفريق */
+    window.openTeamModal = function(index) {
+        editingTeamIndex = index;
+        const team = teams[index];
+        document.getElementById('modalTeamTitle').textContent = `إعدادات: ${team.name}`;
+        document.getElementById('modalLogoUrl').value = team.logo || '';
+        document.getElementById('modalTeamStatus').value = team.status || 'none';
+        previewTeamLogo(team.logo || '');
+        document.getElementById('teamModal').classList.add('open');
+    };
+
+    window.previewTeamLogo = function(url) {
+        const box = document.getElementById('logoPreviewBox');
+        const clean = url.trim();
+        if (clean) {
+            box.innerHTML = `<img src="${clean}" alt="logo" onerror="this.parentElement.textContent='خطأ في الرابط'">`;
+        } else {
+            const t = teams[editingTeamIndex];
+            box.textContent = t ? t.short : 'PNG';
+        }
+    };
+
+    window.saveTeamModal = function() {
+        if (editingTeamIndex === null) return;
+        const team = teams[editingTeamIndex];
+        team.logo = document.getElementById('modalLogoUrl').value.trim();
+        team.status = document.getElementById('modalTeamStatus').value;
+        saveAll(true);
+        closeModal('teamModal');
+        renderStandings();
+        renderMatches();
+    };
+
+    /* تبويب الإحصائيات */
+    window.renderStats = function() {
+        if (teams.length === 0) return;
+        const leader = [...teams].sort((a, b) => b.points - a.points)[0];
+        const bestAttack = [...teams].sort((a, b) => b.gf - a.gf)[0];
+        const bestDefense = [...teams].sort((a, b) => a.ga - b.ga)[0];
+        const totalGoals = teams.reduce((sum, t) => sum + (Number(t.gf) || 0), 0);
+
+        document.getElementById('statsGrid').innerHTML = `
+            <div class="stat-box">
+                <div class="stat-box-title">🥇 متصدر الدوري</div>
+                <div class="stat-box-value">${leader.name}</div>
+                <div class="stat-box-sub">${leader.points} نقطة</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-box-title">⚽ أقوى هجوم</div>
+                <div class="stat-box-value">${bestAttack.name}</div>
+                <div class="stat-box-sub">${bestAttack.gf} هدف مسجل</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-box-title">🛡️ أقوى دفاع</div>
+                <div class="stat-box-value">${bestDefense.name}</div>
+                <div class="stat-box-sub">استقبل ${bestDefense.ga} أهداف</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-box-title">🔥 مجموع الأهداف</div>
+                <div class="stat-box-value">${totalGoals} هدف</div>
+                <div class="stat-box-sub">عبر جميع الجولات</div>
+            </div>
+        `;
+    };
+
+    window.closeModal = function(id) {
+        document.getElementById(id).classList.remove('open');
+    };
+
+    function renderAll() {
+        renderMatches();
+        renderStandings();
+        renderStats();
+    }
+
+    updateAdminUI();
+</script>
+</body>
+</html>
