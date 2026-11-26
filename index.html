@@ -1071,6 +1071,164 @@
             line-height: 1.7;
             margin-top: 8px;
         }
+
+        /* 3. شريط تصفية الجولات والحالات */
+        .rounds-filter-bar {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 12px;
+            overflow-x: auto;
+            scrollbar-width: none;
+            background: rgba(5, 22, 43, 0.45);
+            border-bottom: 1px solid rgba(217, 237, 255, 0.14);
+        }
+        .rounds-filter-bar::-webkit-scrollbar { display: none; }
+        .filter-pill {
+            white-space: nowrap;
+            padding: 5px 11px;
+            border-radius: 999px;
+            font-size: 11.5px;
+            font-weight: 700;
+            background: rgba(255, 255, 255, 0.07);
+            border: 1px solid rgba(224, 242, 255, 0.2);
+            color: #b7d7f2;
+            box-shadow: none;
+            flex-shrink: 0;
+        }
+        .filter-pill.active {
+            background: linear-gradient(135deg, rgba(38, 223, 255, 0.45), rgba(14, 118, 214, 0.6));
+            border-color: rgba(145, 228, 255, 0.75);
+            color: #ffffff;
+        }
+
+        /* 2. خط زمني لأحداث المباراة */
+        .match-events-timeline {
+            padding: 10px 14px;
+            background: rgba(4, 18, 36, 0.55);
+            border-bottom: 1px solid rgba(217, 237, 255, 0.14);
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .event-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 12px;
+            padding: 4px 10px;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.06);
+        }
+        .event-item.home-ev {
+            justify-content: flex-start;
+            gap: 8px;
+            border-right: 3px solid #26dfff;
+        }
+        .event-item.away-ev {
+            justify-content: flex-end;
+            gap: 8px;
+            border-left: 3px solid #ffae33;
+        }
+        .event-minute {
+            font-weight: 800;
+            color: #7ee8ff;
+            direction: ltr;
+            font-size: 11px;
+        }
+        .admin-event-bar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            padding: 8px 14px;
+            background: rgba(7, 28, 54, 0.65);
+            border-bottom: 1px solid rgba(217, 237, 255, 0.14);
+            align-items: center;
+        }
+        .admin-event-bar select,
+        .admin-event-bar input {
+            padding: 5px 8px;
+            border-radius: 9px;
+            border: 1px solid rgba(224, 242, 255, 0.3);
+            background: rgba(4, 18, 36, 0.85);
+            color: #fff;
+            font-size: 11.5px;
+            outline: none;
+        }
+
+        /* 4. تعدد السيرفرات وأزرار المشغل */
+        .server-switcher-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+        .server-tabs {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+        .server-btn {
+            padding: 5px 11px;
+            border-radius: 10px;
+            font-size: 11.5px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(224, 242, 255, 0.25);
+        }
+        .server-btn.active {
+            background: linear-gradient(135deg, rgba(0, 214, 160, 0.5), rgba(14, 118, 214, 0.65));
+            border-color: rgba(120, 255, 218, 0.7);
+        }
+
+        /* 5. نافذة تفاصيل الفريق */
+        .team-info.clickable {
+            cursor: pointer;
+        }
+        .team-info.clickable:hover .team-name {
+            color: #5ce1ff;
+            text-decoration: underline;
+        }
+        .team-detail-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid rgba(217, 237, 255, 0.2);
+            margin-bottom: 12px;
+        }
+        .team-detail-stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            margin-bottom: 12px;
+            text-align: center;
+        }
+        .td-stat-card {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(224, 242, 255, 0.2);
+            border-radius: 12px;
+            padding: 8px 4px;
+        }
+        .td-stat-card .lbl { font-size: 10.5px; color: #a9cce8; }
+        .td-stat-card .val { font-size: 15px; font-weight: 800; color: #fff; }
+        .td-section-title {
+            font-size: 12.5px;
+            font-weight: 800;
+            color: #7ee8ff;
+            margin: 10px 0 6px;
+        }
+        .td-list-item {
+            background: rgba(255, 255, 255, 0.06);
+            border-radius: 10px;
+            padding: 7px 10px;
+            font-size: 12px;
+            margin-bottom: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
     </style>
 </head>
 <body>
@@ -1106,6 +1264,8 @@
             </div>
         </div>
 
+        <div class="rounds-filter-bar" id="roundsFilterBar"></div>
+
         <div id="matchesList"></div>
     </div>
 
@@ -1118,6 +1278,25 @@
 
         <div id="playerMatchHeader"></div>
 
+        <!-- أحداث المباراة (أهداف / بطاقات) -->
+        <div id="matchEventsContainer" class="match-events-timeline hidden"></div>
+
+        <!-- إضافة حدث سريع للمشرف -->
+        <div id="adminEventAdderBar" class="admin-event-bar hidden">
+            <select id="evSide">
+                <option value="home">المستضيف</option>
+                <option value="away">الضيف</option>
+            </select>
+            <select id="evType">
+                <option value="goal">⚽ هدف (+هدّاف)</option>
+                <option value="yellow">🟨 بطاقة صفراء</option>
+                <option value="red">🟥 بطاقة حمراء</option>
+            </select>
+            <input type="text" id="evPlayer" placeholder="اسم اللاعب" style="flex:1;min-width:110px;">
+            <input type="number" id="evMinute" min="1" max="120" placeholder="دقيقة" style="width:62px;">
+            <button class="success" onclick="addMatchEvent()">+ حدث</button>
+        </div>
+
         <div class="video-wrapper" id="videoContainer">
             <div class="video-placeholder">
                 <span style="font-size:32px">📺</span>
@@ -1126,10 +1305,24 @@
         </div>
 
         <div class="stream-controls">
+            <div class="server-switcher-bar">
+                <div class="server-tabs" id="serverTabsContainer"></div>
+                <div style="display:flex;gap:5px;">
+                    <button type="button" onclick="reconnectCurrentStream()" title="إعادة تحميل البث">🔄 تحديث البث</button>
+                    <button type="button" onclick="togglePlayerFullscreen()" title="ملء الشاشة">⛶ ملء الشاشة</button>
+                </div>
+            </div>
+
             <div id="playerAdminUrlBox" class="hidden">
+                <div class="stream-input-row" style="margin-bottom:6px;">
+                    <input type="text" id="videoUrlInput" dir="ltr" placeholder="رابط السيرفر 1 (YouTube / .m3u8 / .m3u / .ts)">
+                </div>
+                <div class="stream-input-row" style="margin-bottom:6px;">
+                    <input type="text" id="videoUrlInput2" dir="ltr" placeholder="رابط السيرفر 2 البديل (اختياري)">
+                </div>
                 <div class="stream-input-row">
-                    <input type="text" id="videoUrlInput" dir="ltr" placeholder="رابط البث: YouTube أو .m3u8 أو .m3u أو .ts">
-                    <button class="primary" onclick="saveAndPlayMatchStream()">تشغيل وحفظ</button>
+                    <input type="text" id="videoUrlInput3" dir="ltr" placeholder="رابط السيرفر 3 جودة SD (اختياري)">
+                    <button class="primary" onclick="saveAndPlayMatchStream()">💾 حفظ السيرفرات</button>
                 </div>
             </div>
             <div class="stream-status-msg" id="streamStatusMsg"></div>
@@ -1342,21 +1535,46 @@
         </div>
         <div class="form-row-2">
             <div class="form-group">
+                <label>🗓️ رقم الجولة</label>
+                <input type="number" id="mRound" min="1" max="38" value="8">
+            </div>
+            <div class="form-group">
                 <label>📺 القناة الناقلة</label>
                 <input type="text" id="mChannel" placeholder="مثال: الرياضية TNT">
             </div>
-            <div class="form-group">
-                <label>🏟️ الملعب</label>
-                <input type="text" id="mStadium" placeholder="مثال: مركب محمد الخامس">
-            </div>
         </div>
         <div class="form-group">
-            <label>رابط البث المباشر (YouTube / .m3u8 / .m3u / .ts)</label>
-            <input type="text" id="mVideoUrl" dir="ltr" placeholder="https://... (.m3u8 / .m3u / .ts / youtube)">
+            <label>🏟️ الملعب</label>
+            <input type="text" id="mStadium" placeholder="مثال: مركب محمد الخامس">
+        </div>
+        <div class="form-group">
+            <label>رابط السيرفر 1 الرئيسي (YouTube / .m3u8 / .m3u / .ts)</label>
+            <input type="text" id="mVideoUrl" dir="ltr" placeholder="https://...">
+        </div>
+        <div class="form-row-2">
+            <div class="form-group">
+                <label>رابط السيرفر 2 (بديل)</label>
+                <input type="text" id="mVideoUrl2" dir="ltr" placeholder="https://...">
+            </div>
+            <div class="form-group">
+                <label>رابط السيرفر 3 (جودة SD)</label>
+                <input type="text" id="mVideoUrl3" dir="ltr" placeholder="https://...">
+            </div>
         </div>
         <div class="modal-actions">
             <button onclick="closeModal('matchModal')">إلغاء</button>
             <button class="success" onclick="saveMatchModal()">💾 حفظ وتشغيل</button>
+        </div>
+    </div>
+</div>
+
+
+<!-- نافذة تفاصيل الفريق عند الضغط عليه في الترتيب -->
+<div class="modal-backdrop" id="teamDetailModal" onclick="if(event.target===this) closeModal('teamDetailModal')">
+    <div class="modal">
+        <div id="teamDetailBody"></div>
+        <div class="modal-actions">
+            <button class="primary" onclick="closeModal('teamDetailModal')">إغلاق</button>
         </div>
     </div>
 </div>
@@ -1725,6 +1943,7 @@
     const defaultMatches = [
         {
             id: 101,
+            round: 8,
             homeName: "الرجاء البيضاوي",
             awayName: "الوداد الرياضي",
             homeScore: 1,
@@ -1735,6 +1954,12 @@
             channel: "الرياضية TNT",
             stadium: "مركب محمد الخامس",
             videoUrl: "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8",
+            videoUrl2: "",
+            videoUrl3: "",
+            events: [
+                { id: 1, side: "home", type: "goal", player: "يوسري بوزوق", minute: 18 },
+                { id: 2, side: "away", type: "goal", player: "أيوب الكعبي", minute: 31 }
+            ],
             counted: false,
             countedHomeGoals: 0,
             countedAwayGoals: 0,
@@ -1742,6 +1967,7 @@
         },
         {
             id: 102,
+            round: 8,
             homeName: "الجيش الملكي",
             awayName: "نهضة بركان",
             homeScore: 2,
@@ -1752,6 +1978,12 @@
             channel: "الرياضية HD",
             stadium: "المجمع الرياضي الأمير مولاي عبد الله",
             videoUrl: "",
+            videoUrl2: "",
+            videoUrl3: "",
+            events: [
+                { id: 3, side: "home", type: "goal", player: "ربيع حريمات", minute: 41 },
+                { id: 4, side: "away", type: "yellow", player: "يوسف الفحلي", minute: 64 }
+            ],
             counted: false,
             countedHomeGoals: 0,
             countedAwayGoals: 0,
@@ -1759,6 +1991,7 @@
         },
         {
             id: 103,
+            round: 9,
             homeName: "الكوكب المراكشي",
             awayName: "المغرب الفاسي",
             homeScore: 0,
@@ -1769,6 +2002,9 @@
             channel: "الرياضية TNT",
             stadium: "ملعب مراكش الكبير",
             videoUrl: "",
+            videoUrl2: "",
+            videoUrl3: "",
+            events: [],
             counted: false,
             countedHomeGoals: 0,
             countedAwayGoals: 0,
@@ -1792,7 +2028,10 @@
     let currentView = 'matches';
     let standingsTab = 'overall';
     let matchSearchQuery = '';
+    let matchFilterMode = 'all'; // 'all' | 'live' | 'upcoming' | 'finished' | 'round:X'
     let currentPlayerMatchId = null;
+    let activeStreamServer = 1;
+    let lastPlayedStreamUrl = '';
     let editingTeamIndex = null;
     let editingMatchId = null;
     let editingScorerId = null;
@@ -1819,6 +2058,12 @@
         }
     }
     teams.forEach(ensureTeamFields);
+    matches.forEach(m => {
+        if (!m.round) m.round = 8;
+        if (!Array.isArray(m.events)) m.events = [];
+        if (typeof m.videoUrl2 !== 'string') m.videoUrl2 = '';
+        if (typeof m.videoUrl3 !== 'string') m.videoUrl3 = '';
+    });
 
     async function saveAll() {
         await writeSecureRecord(SEC_STORAGE.TEAMS, teams);
@@ -1887,10 +2132,12 @@
         const addTeamBtn = document.getElementById('addTeamBtn');
         const addScorerBtn = document.getElementById('addScorerBtn');
         const playerUrlBox = document.getElementById('playerAdminUrlBox');
+        const adminEventBar = document.getElementById('adminEventAdderBar');
 
         if (isAdmin && auth && auth.currentUser) {
             toolbar.classList.remove('hidden');
             playerUrlBox.classList.remove('hidden');
+            if (adminEventBar) adminEventBar.classList.remove('hidden');
             toggleBtn.textContent = isEditMode ? '✅ إنهاء التعديل' : '✏️ تفعيل التعديل';
             addMatchBtn.classList.toggle('hidden', !isEditMode);
             addTeamBtn.classList.toggle('hidden', !isEditMode);
@@ -1899,6 +2146,7 @@
             isEditMode = false;
             toolbar.classList.add('hidden');
             playerUrlBox.classList.add('hidden');
+            if (adminEventBar) adminEventBar.classList.add('hidden');
             addScorerBtn.classList.add('hidden');
         }
         renderAll();
@@ -2166,6 +2414,9 @@
 
     function renderMatchMetaHtml(m) {
         const parts = [];
+        if (m.round) {
+            parts.push(`<span class="match-meta-chip">🗓️ الجولة ${Number(m.round)}</span>`);
+        }
         if (m.channel && m.channel.trim()) {
             parts.push(`<span class="match-meta-chip">📺 ${escapeHTML(m.channel)}</span>`);
         }
@@ -2176,14 +2427,47 @@
         return `<div class="match-meta-line">${parts.join('')}</div>`;
     }
 
+    window.setMatchFilter = function(mode) {
+        matchFilterMode = mode;
+        renderMatches();
+    };
+
+    function renderRoundsFilterBar() {
+        const bar = document.getElementById('roundsFilterBar');
+        if (!bar) return;
+        const rounds = [...new Set(matches.map(m => Number(m.round) || 8))].sort((a, b) => a - b);
+        const pills = [
+            { id: 'all', label: 'الكل' },
+            { id: 'live', label: '🔴 مباشر' },
+            { id: 'upcoming', label: '🕒 القادمة' },
+            { id: 'finished', label: '🏁 المنتهية' },
+            ...rounds.map(r => ({ id: `round:${r}`, label: `الجولة ${r}` }))
+        ];
+        bar.innerHTML = pills.map(p =>
+            `<button type="button" class="filter-pill ${matchFilterMode === p.id ? 'active' : ''}" onclick="setMatchFilter('${p.id}')">${p.label}</button>`
+        ).join('');
+    }
+
     function renderMatches() {
+        renderRoundsFilterBar();
         const list = document.getElementById('matchesList');
         list.innerHTML = '';
 
-        const filteredMatches = PreparedQueryEngine.executeSearch(matches, matchSearchQuery);
+        let filteredMatches = PreparedQueryEngine.executeSearch(matches, matchSearchQuery);
+
+        if (matchFilterMode === 'live') {
+            filteredMatches = filteredMatches.filter(m => m.state === '1H' || m.state === '2H' || m.state === 'HT');
+        } else if (matchFilterMode === 'upcoming') {
+            filteredMatches = filteredMatches.filter(m => m.state === 'upcoming');
+        } else if (matchFilterMode === 'finished') {
+            filteredMatches = filteredMatches.filter(m => m.state === 'FT');
+        } else if (matchFilterMode.startsWith('round:')) {
+            const targetR = Number(matchFilterMode.split(':')[1]);
+            filteredMatches = filteredMatches.filter(m => (Number(m.round) || 8) === targetR);
+        }
 
         if (filteredMatches.length === 0) {
-            list.innerHTML = `<div style="padding:24px;text-align:center;color:#a9cce8;font-size:13px">${matchSearchQuery ? 'لا توجد مباريات مطابقة لبحثك' : 'لا توجد مباريات مضافة حالياً'}</div>`;
+            list.innerHTML = `<div style="padding:24px;text-align:center;color:#a9cce8;font-size:13px">لا توجد مباريات مطابقة للتصفية الحالية</div>`;
             return;
         }
 
@@ -2282,9 +2566,12 @@
             document.getElementById('mAwayScore').value = m.awayScore;
             document.getElementById('mState').value = m.state;
             document.getElementById('mMinuteOrTime').value = m.state === 'upcoming' ? (m.kickoffTime || '20:00') : m.minute;
+            document.getElementById('mRound').value = m.round || 8;
             document.getElementById('mChannel').value = m.channel || '';
             document.getElementById('mStadium').value = m.stadium || '';
             document.getElementById('mVideoUrl').value = m.videoUrl || '';
+            document.getElementById('mVideoUrl2').value = m.videoUrl2 || '';
+            document.getElementById('mVideoUrl3').value = m.videoUrl3 || '';
         } else {
             document.getElementById('matchModalTitle').textContent = 'إضافة مباراة جديدة';
             homeSel.value = 0;
@@ -2293,9 +2580,12 @@
             document.getElementById('mAwayScore').value = 0;
             document.getElementById('mState').value = 'upcoming';
             document.getElementById('mMinuteOrTime').value = '20:00';
+            document.getElementById('mRound').value = 8;
             document.getElementById('mChannel').value = 'الرياضية TNT';
             document.getElementById('mStadium').value = '';
             document.getElementById('mVideoUrl').value = '';
+            document.getElementById('mVideoUrl2').value = '';
+            document.getElementById('mVideoUrl3').value = '';
         }
 
         document.getElementById('matchModal').classList.add('open');
@@ -2318,26 +2608,32 @@
                 homeScore: { type: 'number', min: 0, max: 99 },
                 awayScore: { type: 'number', min: 0, max: 99 },
                 state: { type: 'enum', values: ['upcoming', '1H', 'HT', '2H', 'FT'] },
+                round: { type: 'number', min: 1, max: 38 },
                 minOrTime: { type: 'string', required: false, maxLen: 20 },
                 channel: { type: 'string', required: false, maxLen: 60 },
                 stadium: { type: 'string', required: false, maxLen: 80 },
-                videoUrl: { type: 'url' }
+                videoUrl: { type: 'url' },
+                videoUrl2: { type: 'url' },
+                videoUrl3: { type: 'url' }
             }, {
                 homeName: teams[hIdx].name,
                 awayName: teams[aIdx].name,
                 homeScore: document.getElementById('mHomeScore').value || 0,
                 awayScore: document.getElementById('mAwayScore').value || 0,
                 state: document.getElementById('mState').value,
+                round: document.getElementById('mRound').value || 8,
                 minOrTime: document.getElementById('mMinuteOrTime').value,
                 channel: document.getElementById('mChannel').value,
                 stadium: document.getElementById('mStadium').value,
-                videoUrl: document.getElementById('mVideoUrl').value
+                videoUrl: document.getElementById('mVideoUrl').value,
+                videoUrl2: document.getElementById('mVideoUrl2').value,
+                videoUrl3: document.getElementById('mVideoUrl3').value
             });
         } catch (err) {
             alert('⚠️ تم رفض المدخلات بواسطة نظام الحماية: ' + err.message);
             return;
         }
-        const { homeName, awayName, homeScore, awayScore, state, minOrTime, channel, stadium, videoUrl } = boundMatch;
+        const { homeName, awayName, homeScore, awayScore, state, round, minOrTime, channel, stadium, videoUrl, videoUrl2, videoUrl3 } = boundMatch;
 
         let minute = 0;
         let kickoffTime = '20:00';
@@ -2357,12 +2653,13 @@
             const m = matches.find(x => x.id === editingMatchId);
             if (m) {
                 if (state !== 'FT' && m.counted) revertMatchFromStandings(m);
-                Object.assign(m, { homeName, awayName, homeScore, awayScore, state, minute, kickoffTime, channel, stadium, videoUrl });
+                Object.assign(m, { homeName, awayName, homeScore, awayScore, state, round, minute, kickoffTime, channel, stadium, videoUrl, videoUrl2, videoUrl3 });
                 if (state === 'FT') applyMatchToStandings(m);
             }
         } else {
             const newMatch = {
                 id: Date.now(),
+                round,
                 homeName,
                 awayName,
                 homeScore,
@@ -2373,6 +2670,9 @@
                 channel,
                 stadium,
                 videoUrl,
+                videoUrl2,
+                videoUrl3,
+                events: [],
                 counted: false,
                 countedHomeGoals: 0,
                 countedAwayGoals: 0,
@@ -2454,9 +2754,9 @@
             row.innerHTML = `
                 ${statusHtml}
                 <div class="rank">${rankIndex + 1}</div>
-                <div class="team-info">
+                <div class="team-info clickable" onclick="openTeamDetailModal(${Number(originalIndex)})" title="اضغط لعرض إحصائيات الفريق">
                     ${renderCrest(team)}
-                    <span class="team-name" title="${escapeHTML(team.name)}">${escapeHTML(team.name)}</span>
+                    <span class="team-name">${escapeHTML(team.name)}</span>
                 </div>
                 <div class="stat">${Number(stats.played) || 0}</div>
                 <div class="stat">${Number(stats.gf) || 0}:${Number(stats.ga) || 0}</div>
@@ -2633,14 +2933,211 @@
         }
     };
 
+    window.openTeamDetailModal = function(teamIdx) {
+        const team = teams[teamIdx];
+        if (!team) return;
+        ensureTeamFields(team);
+        const diff = (Number(team.gf) || 0) - (Number(team.ga) || 0);
+        const diffText = diff > 0 ? `+${diff}` : `${diff}`;
+
+        const teamMatches = matches.filter(m => m.homeName === team.name || m.awayName === team.name);
+        const teamScorers = scorers.filter(s => s.teamName === team.name).sort((a, b) => b.goals - a.goals);
+
+        const matchesHtml = teamMatches.length
+            ? teamMatches.map(m => {
+                const sc = m.state === 'upcoming' ? (m.kickoffTime || '20:00') : `${m.homeScore} - ${m.awayScore}`;
+                return `<div class="td-list-item">
+                    <span>${escapeHTML(m.homeName)} × ${escapeHTML(m.awayName)}</span>
+                    <strong style="color:#7ee8ff;direction:ltr">${escapeHTML(sc)}</strong>
+                </div>`;
+            }).join('')
+            : `<div style="font-size:12px;color:#a9cce8;">لا توجد مباريات مسجلة لهذا الفريق</div>`;
+
+        const scorersHtml = teamScorers.length
+            ? teamScorers.map(s => `<div class="td-list-item">
+                <span>👟 ${escapeHTML(s.name)}</span>
+                <strong style="color:#00e6ac">${Number(s.goals)} أهداف</strong>
+            </div>`).join('')
+            : `<div style="font-size:12px;color:#a9cce8;">لا يوجد هدافون مسجلون حالياً</div>`;
+
+        document.getElementById('teamDetailBody').innerHTML = `
+            <div class="team-detail-header">
+                ${renderCrest(team, 44)}
+                <div>
+                    <h3 style="margin:0;font-size:17px;">${escapeHTML(team.name)}</h3>
+                    <div style="margin-top:4px;">${renderFormDots(team.form)}</div>
+                </div>
+            </div>
+            <div class="team-detail-stats">
+                <div class="td-stat-card"><div class="lbl">لعب</div><div class="val">${Number(team.played) || 0}</div></div>
+                <div class="td-stat-card"><div class="lbl">النقاط</div><div class="val" style="color:#5ce1ff">${Number(team.points) || 0}</div></div>
+                <div class="td-stat-card"><div class="lbl">له / عليه</div><div class="val" style="direction:ltr">${Number(team.gf) || 0}:${Number(team.ga) || 0}</div></div>
+                <div class="td-stat-card"><div class="lbl">الفارق</div><div class="val" style="direction:ltr">${diffText}</div></div>
+            </div>
+            <div class="td-section-title">📅 مباريات الفريق</div>
+            ${matchesHtml}
+            <div class="td-section-title">⚽ هدافو الفريق</div>
+            ${scorersHtml}
+        `;
+        document.getElementById('teamDetailModal').classList.add('open');
+    };
+
+    function renderMatchEvents() {
+        const box = document.getElementById('matchEventsContainer');
+        if (!box) return;
+        const m = matches.find(x => x.id === currentPlayerMatchId);
+        if (!m || !Array.isArray(m.events) || m.events.length === 0) {
+            box.classList.add('hidden');
+            box.innerHTML = '';
+            return;
+        }
+        box.classList.remove('hidden');
+        const sortedEvents = [...m.events].sort((a, b) => (Number(a.minute) || 0) - (Number(b.minute) || 0));
+        box.innerHTML = sortedEvents.map(ev => {
+            const icon = ev.type === 'goal' ? '⚽' : (ev.type === 'yellow' ? '🟨' : '🟥');
+            const sideClass = ev.side === 'away' ? 'away-ev' : 'home-ev';
+            const delBtn = (isAdmin && isEditMode)
+                ? `<button type="button" class="icon-btn danger" onclick="deleteMatchEvent(${Number(ev.id)})" title="حذف الحدث">✕</button>`
+                : '';
+            return `<div class="event-item ${sideClass}">
+                <span class="event-minute">${Number(ev.minute) || 0}'</span>
+                <span>${icon} <b>${escapeHTML(ev.player)}</b></span>
+                ${delBtn}
+            </div>`;
+        }).join('');
+    }
+
+    window.addMatchEvent = async function() {
+        if (!(await requireAdminAccessAsync('ADD_MATCH_EVENT'))) return;
+        const m = matches.find(x => x.id === currentPlayerMatchId);
+        if (!m) return;
+
+        let boundEv;
+        try {
+            boundEv = PreparedQueryEngine.bindParams({
+                side: { type: 'enum', values: ['home', 'away'] },
+                type: { type: 'enum', values: ['goal', 'yellow', 'red'] },
+                player: { type: 'string', required: true, maxLen: 60 },
+                minute: { type: 'number', min: 1, max: 130 }
+            }, {
+                side: document.getElementById('evSide').value,
+                type: document.getElementById('evType').value,
+                player: document.getElementById('evPlayer').value,
+                minute: document.getElementById('evMinute').value || (m.minute || 1)
+            });
+        } catch (err) {
+            alert('⚠️ مدخلات غير صالحة: ' + err.message);
+            return;
+        }
+
+        if (!Array.isArray(m.events)) m.events = [];
+        m.events.push({
+            id: Date.now(),
+            side: boundEv.side,
+            type: boundEv.type,
+            player: boundEv.player,
+            minute: boundEv.minute
+        });
+
+        // إذا كان الحدث هدفاً: تحديث النتيجة وإضافة الهدف تلقائياً لجدول الهدافين
+        if (boundEv.type === 'goal') {
+            if (boundEv.side === 'home') m.homeScore = (Number(m.homeScore) || 0) + 1;
+            else m.awayScore = (Number(m.awayScore) || 0) + 1;
+
+            const scoringTeam = boundEv.side === 'home' ? m.homeName : m.awayName;
+            const existingScorer = scorers.find(s => s.name.toLowerCase() === boundEv.player.toLowerCase());
+            if (existingScorer) {
+                existingScorer.goals = (Number(existingScorer.goals) || 0) + 1;
+            } else {
+                scorers.push({
+                    id: Date.now() + 1,
+                    name: boundEv.player,
+                    teamName: scoringTeam,
+                    goals: 1
+                });
+            }
+        }
+
+        document.getElementById('evPlayer').value = '';
+        document.getElementById('evMinute').value = '';
+        await saveAll();
+        renderPlayerHeader();
+        renderMatchEvents();
+        renderMatches();
+        renderScorers();
+    };
+
+    window.deleteMatchEvent = async function(evId) {
+        if (!(await requireAdminAccessAsync('DELETE_MATCH_EVENT'))) return;
+        const m = matches.find(x => x.id === currentPlayerMatchId);
+        if (!m || !Array.isArray(m.events)) return;
+        const idx = m.events.findIndex(e => e.id === evId);
+        if (idx === -1) return;
+        const ev = m.events[idx];
+        if (ev.type === 'goal') {
+            if (ev.side === 'home') m.homeScore = Math.max(0, (Number(m.homeScore) || 0) - 1);
+            else m.awayScore = Math.max(0, (Number(m.awayScore) || 0) - 1);
+        }
+        m.events.splice(idx, 1);
+        await saveAll();
+        renderPlayerHeader();
+        renderMatchEvents();
+        renderMatches();
+    };
+
+    function renderServerTabs(m) {
+        const box = document.getElementById('serverTabsContainer');
+        if (!box || !m) return;
+        const servers = [
+            { num: 1, label: '📡 سيرفر 1 (HD)', url: m.videoUrl },
+            { num: 2, label: '📡 سيرفر 2 (بديل)', url: m.videoUrl2 },
+            { num: 3, label: '📡 سيرفر 3 (SD)', url: m.videoUrl3 }
+        ].filter(s => (s.url && s.url.trim()) || s.num === 1);
+
+        box.innerHTML = servers.map(s =>
+            `<button type="button" class="server-btn ${activeStreamServer === s.num ? 'active' : ''}" onclick="switchStreamServer(${s.num})">${s.label}</button>`
+        ).join('');
+    }
+
+    window.switchStreamServer = function(serverNum) {
+        activeStreamServer = serverNum;
+        const m = matches.find(x => x.id === currentPlayerMatchId);
+        if (!m) return;
+        renderServerTabs(m);
+        const url = serverNum === 1 ? m.videoUrl : (serverNum === 2 ? m.videoUrl2 : m.videoUrl3);
+        playStreamUrl(url || '');
+    };
+
+    window.reconnectCurrentStream = function() {
+        if (lastPlayedStreamUrl) {
+            setPlayerStatus('🔄 جاري إعادة الاتصال بالبث...');
+            playStreamUrl(lastPlayedStreamUrl);
+        }
+    };
+
+    window.togglePlayerFullscreen = function() {
+        const wrapper = document.getElementById('videoContainer');
+        if (!wrapper) return;
+        if (document.fullscreenElement) {
+            document.exitFullscreen().catch(() => {});
+        } else if (wrapper.requestFullscreen) {
+            wrapper.requestFullscreen().catch(() => {});
+        }
+    };
+
     window.openMatchPlayer = function(id) {
         currentPlayerMatchId = id;
+        activeStreamServer = 1;
         switchView('player');
         renderPlayerHeader();
+        renderMatchEvents();
 
         const m = matches.find(x => x.id === id);
+        renderServerTabs(m);
         const url = m ? (m.videoUrl || '').trim() : '';
-        document.getElementById('videoUrlInput').value = url;
+        document.getElementById('videoUrlInput').value = m ? (m.videoUrl || '') : '';
+        document.getElementById('videoUrlInput2').value = m ? (m.videoUrl2 || '') : '';
+        document.getElementById('videoUrlInput3').value = m ? (m.videoUrl3 || '') : '';
         playStreamUrl(url);
     };
 
@@ -2699,326 +3196,4 @@
         const container = document.getElementById('videoContainer');
         const playlistBox = document.getElementById('m3uPlaylistBox');
         playlistBox.classList.add('hidden');
-        playlistBox.innerHTML = '';
-
-        const url = sanitizeUrl(rawUrl);
-        if (!url) {
-            container.innerHTML = `
-                <div class="video-placeholder">
-                    <span style="font-size:32px">📺</span>
-                    <span>لا يوجد رابط بث آمن مضاف لهذه المباراة حالياً</span>
-                </div>`;
-            return;
-        }
-
-        const ytId = extractYouTubeId(url);
-        if (ytId) {
-            container.innerHTML = `
-                <iframe
-                    src="https://www.youtube.com/embed/${ytId}?autoplay=1&rel=0"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowfullscreen>
-                </iframe>`;
-            setPlayerStatus('▶ تشغيل البث الآمن عبر YouTube');
-            return;
-        }
-
-        const cleanPath = url.split('?')[0].toLowerCase();
-
-        if (cleanPath.endsWith('.m3u')) {
-            setPlayerStatus('⏳ جاري تحميل قائمة القنوات M3U...');
-            try {
-                const res = await fetch(url);
-                const text = await res.text();
-                const channels = parseM3U(text);
-                if (channels.length > 0) {
-                    playlistBox.classList.remove('hidden');
-                    channels.forEach(ch => {
-                        const item = document.createElement('div');
-                        item.className = 'm3u-channel-item';
-                        item.innerHTML = `<span>📡 ${escapeHTML(ch.name)}</span><span style="color:#7ee8ff">تشغيل ▶</span>`;
-                        item.onclick = () => playDirectStream(ch.url, ch.name);
-                        playlistBox.appendChild(item);
-                    });
-                    playDirectStream(channels[0].url, channels[0].name);
-                    return;
-                }
-            } catch (err) {
-                setPlayerStatus('⚠️ تعذر جلب ملف M3U مباشرة (قد يمنعه المتصفح بسبب CORS).', true);
-                return;
-            }
-        }
-
-        playDirectStream(url);
-    }
-
-    function parseM3U(content) {
-        const lines = content.split(/\r?\n/);
-        const list = [];
-        let currentName = 'قناة بث مباشر';
-        for (const line of lines) {
-            const trimmed = line.trim();
-            if (!trimmed) continue;
-            if (trimmed.startsWith('#EXTINF:')) {
-                const parts = trimmed.split(',');
-                currentName = parts[parts.length - 1].trim() || 'قناة بث مباشر';
-            } else if (!trimmed.startsWith('#')) {
-                const safeChUrl = sanitizeUrl(trimmed);
-                if (safeChUrl) {
-                    list.push({ name: currentName, url: safeChUrl });
-                }
-                currentName = 'قناة بث مباشر';
-            }
-        }
-        return list;
-    }
-
-    function playDirectStream(url, label = '') {
-        destroyStreamPlayers();
-        const safeUrl = sanitizeUrl(url);
-        if (!safeUrl) return;
-        const container = document.getElementById('videoContainer');
-        container.innerHTML = `<video id="liveVideoEl" controls autoplay playsinline></video>`;
-        const video = document.getElementById('liveVideoEl');
-        const cleanPath = safeUrl.split('?')[0].toLowerCase();
-
-        if (cleanPath.endsWith('.ts') && window.mpegts && mpegts.getFeatureList().mseLivePlayback) {
-            mpegtsPlayer = mpegts.createPlayer({ type: 'mpegts', isLive: true, url: safeUrl });
-            mpegtsPlayer.attachMediaElement(video);
-            mpegtsPlayer.load();
-            mpegtsPlayer.play().catch(() => {});
-            setPlayerStatus(`▶ تشغيل بث MPEG-TS ${label ? '(' + label + ')' : ''}`);
-        } else if (window.Hls && Hls.isSupported() && (cleanPath.endsWith('.m3u8') || !cleanPath.endsWith('.mp4'))) {
-            hlsInstance = new Hls();
-            hlsInstance.loadSource(safeUrl);
-            hlsInstance.attachMedia(video);
-            hlsInstance.on(Hls.Events.MANIFEST_PARSED, () => {
-                video.play().catch(() => {});
-            });
-            hlsInstance.on(Hls.Events.ERROR, (event, data) => {
-                if (data.fatal) {
-                    setPlayerStatus('⚠️ تعذر تشغيل البث، تأكد من صلاحية الرابط.', true);
-                }
-            });
-            setPlayerStatus(`▶ تشغيل بث HLS ${label ? '(' + label + ')' : ''}`);
-        } else {
-            video.src = safeUrl;
-            video.play().catch(() => {});
-            setPlayerStatus(`▶ تشغيل البث المباشر ${label ? '(' + label + ')' : ''}`);
-        }
-    }
-
-    window.saveAndPlayMatchStream = async function() {
-        if (!(await requireAdminAccessAsync('SAVE_STREAM_URL'))) return;
-        const url = sanitizeUrl(document.getElementById('videoUrlInput').value);
-        document.getElementById('videoUrlInput').value = url;
-        const m = matches.find(x => x.id === currentPlayerMatchId);
-        if (m) {
-            m.videoUrl = url;
-            saveAll();
-        }
-        playStreamUrl(url);
-    };
-
-    function renderStats() {
-        const grid = document.getElementById('statsGrid');
-        if (!teams.length) return;
-
-        const leader = [...teams].sort((a, b) => b.points - a.points)[0];
-        const bestAttack = [...teams].sort((a, b) => b.gf - a.gf)[0];
-        const bestDefense = [...teams].sort((a, b) => a.ga - b.ga)[0];
-        const totalGoals = teams.reduce((sum, t) => sum + (Number(t.gf) || 0), 0);
-
-        grid.innerHTML = `
-            <div class="stat-box">
-                <div class="stat-box-title">🥇 متصدر الترتيب</div>
-                <div class="stat-box-value">${escapeHTML(leader.name)}</div>
-                <div class="stat-box-sub">${Number(leader.points) || 0} نقطة</div>
-            </div>
-            <div class="stat-box">
-                <div class="stat-box-title">⚽ أقوى هجوم</div>
-                <div class="stat-box-value">${escapeHTML(bestAttack.name)}</div>
-                <div class="stat-box-sub">${Number(bestAttack.gf) || 0} هدف مسجل</div>
-            </div>
-            <div class="stat-box">
-                <div class="stat-box-title">🛡️ أقوى دفاع</div>
-                <div class="stat-box-value">${escapeHTML(bestDefense.name)}</div>
-                <div class="stat-box-sub">استقبل ${Number(bestDefense.ga) || 0} أهداف</div>
-            </div>
-            <div class="stat-box">
-                <div class="stat-box-title">🔥 مجموع الأهداف</div>
-                <div class="stat-box-value">${totalGoals} هدف</div>
-                <div class="stat-box-sub">عبر جميع الجولات</div>
-            </div>
-        `;
-
-        renderScorers();
-    }
-
-    function renderScorers() {
-        const container = document.getElementById('scorersContainer');
-        const header = document.getElementById('scorersHeader');
-        const editHead = document.getElementById('scorerEditColHead');
-
-        const canEdit = isAdmin && isEditMode;
-        header.className = canEdit ? 'scorers-head edit-mode' : 'scorers-head';
-        editHead.classList.toggle('hidden', !canEdit);
-
-        const sorted = [...scorers].sort((a, b) => (Number(b.goals) || 0) - (Number(a.goals) || 0));
-        container.innerHTML = '';
-
-        if (sorted.length === 0) {
-            container.innerHTML = `<div style="padding:20px;text-align:center;color:#a9cce8;font-size:13px">لا يوجد هدافون مسجلون حالياً</div>`;
-            return;
-        }
-
-        sorted.forEach((sc, idx) => {
-            const teamObj = getTeamByName(sc.teamName);
-            const row = document.createElement('div');
-            row.className = canEdit ? 'scorer-row edit-mode' : 'scorer-row';
-            row.innerHTML = `
-                <div class="rank">${idx + 1}</div>
-                <div class="scorer-player" title="${escapeHTML(sc.name)}">${escapeHTML(sc.name)}</div>
-                <div class="scorer-team" title="${escapeHTML(sc.teamName)}">
-                    ${renderCrest(teamObj, 20)}
-                    <span style="overflow:hidden;text-overflow:ellipsis;">${escapeHTML(sc.teamName)}</span>
-                </div>
-                <div class="scorer-goals">${Number(sc.goals) || 0}</div>
-                ${canEdit ? `
-                <div class="row-actions">
-                    <button class="icon-btn" onclick="openScorerModal(${Number(sc.id)})" title="تعديل">✏️</button>
-                    <button class="icon-btn danger" onclick="deleteScorer(${Number(sc.id)})" title="حذف">🗑</button>
-                </div>` : ''}
-            `;
-            container.appendChild(row);
-        });
-    }
-
-    window.openScorerModal = function(id = null) {
-        if (!requireAdminAccess()) return;
-        editingScorerId = id;
-        const teamSel = document.getElementById('sTeamName');
-        teamSel.innerHTML = '';
-        teams.forEach(t => {
-            teamSel.innerHTML += `<option value="${escapeHTML(t.name)}">${escapeHTML(t.name)}</option>`;
-        });
-
-        if (id !== null) {
-            const sc = scorers.find(x => x.id === id);
-            document.getElementById('scorerModalTitle').textContent = 'تعديل بيانات الهداف';
-            document.getElementById('sName').value = sc ? sc.name : '';
-            if (sc && teams.some(t => t.name === sc.teamName)) {
-                teamSel.value = sc.teamName;
-            }
-            document.getElementById('sGoals').value = sc ? sc.goals : 1;
-        } else {
-            document.getElementById('scorerModalTitle').textContent = 'إضافة هداف جديد';
-            document.getElementById('sName').value = '';
-            document.getElementById('sGoals').value = 1;
-        }
-
-        document.getElementById('scorerModal').classList.add('open');
-    };
-
-    window.saveScorerModal = async function() {
-        if (!(await requireAdminAccessAsync('SAVE_SCORER'))) return;
-        let boundScorer;
-        try {
-            boundScorer = PreparedQueryEngine.bindParams({
-                name: { type: 'string', required: true, maxLen: 80 },
-                teamName: { type: 'string', required: true, maxLen: 80 },
-                goals: { type: 'number', min: 1, max: 200 }
-            }, {
-                name: document.getElementById('sName').value,
-                teamName: document.getElementById('sTeamName').value,
-                goals: document.getElementById('sGoals').value || 1
-            });
-        } catch (err) {
-            alert('⚠️ تم رفض بيانات الهداف بواسطة نظام الحماية: ' + err.message);
-            return;
-        }
-        const { name, teamName, goals } = boundScorer;
-
-        if (editingScorerId !== null) {
-            const sc = scorers.find(x => x.id === editingScorerId);
-            if (sc) {
-                sc.name = name;
-                sc.teamName = teamName;
-                sc.goals = goals;
-            }
-        } else {
-            scorers.push({
-                id: Date.now(),
-                name,
-                teamName,
-                goals
-            });
-        }
-
-        saveAll();
-        closeModal('scorerModal');
-        renderScorers();
-    };
-
-    window.deleteScorer = async function(id) {
-        if (!(await requireAdminAccessAsync('DELETE_SCORER'))) return;
-        const idx = scorers.findIndex(x => x.id === id);
-        if (idx === -1) return;
-        if (confirm(`حذف اللاعب "${scorers[idx].name}" من قائمة الهدافين؟`)) {
-            scorers.splice(idx, 1);
-            saveAll();
-            renderScorers();
-        }
-    };
-
-    // 6. أداة اختبار الحماية الفورية للمشرف
-    window.runSecuritySelfTest = async function() {
-        if (!requireAdminAccess()) return;
-        const storedTeamsRaw = localStorage.getItem(SEC_STORAGE.TEAMS) || '';
-        let integrityOk = false;
-        try {
-            const parsed = JSON.parse(storedTeamsRaw);
-            const expectedSig = await sha256Hex(APP_SALT + parsed.payload);
-            integrityOk = expectedSig === parsed.sig;
-        } catch {}
-
-        const httpsEnforced = document.querySelector('meta[http-equiv="Content-Security-Policy"]')?.content.includes('upgrade-insecure-requests');
-        const guardActive = typeof MAX_LOGIN_ATTEMPTS === 'number' && MAX_LOGIN_ATTEMPTS === 5;
-        const sessionBound = !!sessionStorage.getItem(SEC_STORAGE.SESSION_TOKEN);
-
-        const hstsEnforced = !!document.querySelector('meta[http-equiv="Strict-Transport-Security"]');
-        const preparedActive = typeof PreparedQueryEngine?.bindParams === 'function';
-        let perRequestVerified = false;
-        try {
-            const check = await RequestAuthorizationGuard.verifyRequest('SECURITY_SELF_TEST');
-            perRequestVerified = !!check.authorized;
-        } catch {}
-        document.getElementById('securityReportBody').innerHTML = `
-            <div>✅ <b>فحص الحق في كل طلب (Per-Request Authz & Anti-IDOR):</b> ${perRequestVerified ? 'مفعّل ويتحقق من التوكن وتوقيع الجلسة في كل إجراء' : 'فشل التحقق'}</div>
-            <div>✅ <b>مصادقة المشرف (Firebase Auth + Session):</b> ${sessionBound ? 'نشطة ومربوطة بالجلسة' : 'غير نشطة'}</div>
-            <div>✅ <b>رؤوس الأمان (CSP + HSTS):</b> ${httpsEnforced && hstsEnforced ? 'مفعّلة بالكامل (تقييد المصادر + HSTS 2 سنوات)' : 'جزئية'}</div>
-            <div>✅ <b>الاستعلامات المُحضّرة (Prepared Queries):</b> ${preparedActive ? 'مفعّلة ضد حقن SQL/NoSQL والأوامر الخبيثة' : 'غير مفعلة'}</div>
-            <div>✅ <b>إخفاء مفاتيح API:</b> مشفرة داخل حزمة XOR + Base64 في الذاكرة</div>
-            <div>✅ <b>تأمين قاعدة البيانات وتوقيع SHA-256:</b> ${integrityOk ? 'سليمة ومشفرة بالكامل' : 'تم رصد تعديل خارجي'}</div>
-            <div>✅ <b>تشفير كلمات السر:</b> بصمة SHA-256 + تشفير TLS من Firebase</div>
-            <div>✅ <b>قفل صفحات وأوامر الإدارة:</b> محمية بحارس الصلاحيات <code>requireAdminAccess()</code></div>
-            <div>✅ <b>حد محاولات الدخول:</b> ${guardActive ? '5 محاولات كحد أقصى ثم حظر 15 دقيقة' : 'غير مفعل'}</div>
-        `;
-        document.getElementById('securityReportModal').classList.add('open');
-    };
-
-    window.closeModal = function(id) {
-        document.getElementById(id).classList.remove('open');
-    };
-
-    function renderAll() {
-        renderMatches();
-        renderStandings();
-        renderStats();
-    }
-
-    updateAdminUI();
-    initFirebaseSecure();
-</script>
-</body>
-</html>
+        playlistBox.innerH
